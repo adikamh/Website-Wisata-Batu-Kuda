@@ -3,17 +3,26 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Wisata;  // ← Tambahkan ini!
+use App\Models\Wisata;
 
 class WisataSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        Wisata::create([
-            'nama_wisata' => 'Wisata Batu Kuda',
-            'deskripsi' => 'Destinasi wisata alam dengan pemandangan pegunungan yang indah, cocok untuk camping dan bersantai.',
-            'lokasi' => 'Desa Wisata, Kecamatan Lembang, Bandung Barat',
-            'gambar_url' => '/images/wisata/batu-kuda.jpg',
-        ]);
+        Wisata::updateOrCreate(
+            ['nama_wisata' => 'Batu Kuda'],
+            [
+                'nama_wisata' => 'Batu Kuda',
+                'deskripsi'   => 'Batu Kuda adalah kawasan wisata alam yang terletak di kawasan hutan Perhutani, '
+                               . 'Desa Cikadut, Kecamatan Cimenyan, Kabupaten Bandung. Namanya berasal dari sebuah '
+                               . 'formasi batu besar yang konon menyerupai kuda yang sedang duduk — menjadi daya '
+                               . 'tarik utama yang penuh misteri dan legenda. Berada di ketinggian sekitar 1.200 mdpl '
+                               . 'di lereng Gunung Manglayang, kawasan ini menawarkan udara segar, hamparan pohon '
+                               . 'pinus yang rindang, serta jalur hiking yang cocok untuk semua kalangan.',
+                'lokasi'      => 'Desa Cikadut, Kecamatan Cimenyan, Kabupaten Bandung, Jawa Barat. '
+                               . 'Koordinat: -6.8567, 107.7178. Jarak ±25 km dari pusat Kota Bandung.',
+                'gambar_url'  => 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=900&q=80',
+            ]
+        );
     }
 }
