@@ -26,14 +26,14 @@
         <li><a href="#info">Info Wisata</a></li>
         <li><a href="#lokasi">Lokasi</a></li>
         <li>
-            {{-- <a href="{{ route('login') }}" class="btn-login">
+            <a href="{{ route('login') }}" class="btn-login">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
                     <polyline points="10 17 15 12 10 7"/>
                     <line x1="15" y1="12" x2="3" y2="12"/>
                 </svg>
                 Masuk
-            </a> --}}
+            </a>
         </li>
     </ul>
 </nav>
@@ -378,10 +378,10 @@
     <div class="fade-up">
         <h2>Siap Menjelajahi Batu Kuda?</h2>
         <p>Daftarkan diri Anda dan dapatkan informasi terbaru, tips perjalanan, serta penawaran eksklusif wisata alam Bandung.</p>
-        {{-- <a href="{{ route('register') }}" class="btn-white">
+        <a href="{{ route('register') }}" class="btn-white">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Daftar Gratis Sekarang
-        </a> --}}
+        </a>
     </div>
 </section>
 
@@ -409,10 +409,10 @@
         </div>
         <div>
             <h5>Akun</h5>
-            {{-- <ul>
+            <ul>
                 <li><a href="{{ route('login') }}">Masuk</a></li>
                 <li><a href="{{ route('register') }}">Daftar</a></li>
-            </ul> --}}
+            </ul>
         </div>
     </div>
     <div class="footer-bottom">
