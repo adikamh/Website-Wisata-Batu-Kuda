@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->string('username')->unique()->after('id');
             $table->string('role')->default('user')->after('password');
+            $table->string('Phone')->nullable()->after('role');
+            $table->string('Address')->nullable()->after('Phone');
             $table->string('otp_code', 6)->nullable()->after('role');
             $table->boolean('is_verified')->default(false)->after('otp_code');
         });

@@ -17,6 +17,8 @@ class AdminUserSeeder extends Seeder
             'email' => 'admin@wisatabatukuda.com',
             'password' => Hash::make('password123'),
             'role' => 'admin',
+            'Phone' => '081234567890',
+            'Address' => 'Jl. Contoh No. 123, Kota Bandung',
             'is_verified' => true,
         ]);
         
@@ -26,6 +28,8 @@ class AdminUserSeeder extends Seeder
             'username' => 'user',
             'email' => 'user@example.com',
             'password' => Hash::make('password123'),
+            'Phone' => '081234567890',
+            'Address' => 'Jl. Contoh No. 123, Kota Wisata',
             'role' => 'user',
             'is_verified' => true,
         ]);
