@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const registerForm = document.getElementById('registerForm');
+
     document.querySelectorAll('.toggle-pw').forEach((button) => {
         button.addEventListener('click', () => {
             const target = document.getElementById(button.dataset.target);
@@ -92,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.querySelectorAll('.input-wrap input').forEach((input) => {
+    document.querySelectorAll('.input-wrap input, .input-wrap textarea').forEach((input) => {
         input.addEventListener('focus', () => {
             input.closest('.input-wrap')?.querySelector('.input-icon')?.style.setProperty('color', 'var(--green-fresh)');
         });
@@ -103,6 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    if (registerForm && typeof window.L !== 'undefined') {
+        initLocationPicker();
+    }
 
     ['loginForm', 'registerForm'].forEach((formId) => {
         const form = document.getElementById(formId);
@@ -183,5 +189,166 @@ document.addEventListener('DOMContentLoaded', () => {
         matchHint.style.color = matched ? 'var(--green-fresh)' : 'var(--error)';
         passwordConfirmation.classList.toggle('is-valid', matched);
         passwordConfirmation.classList.toggle('is-invalid', ! matched);
+    }
+
+    function initLocationPicker() {
+        const addressInput = document.getElementById('address');
+        const helpText = document.getElementById('locationHelp');
+        const modalHelpText = document.getElementById('locationModalHelp');
+        const openModalButton = document.getElementById('openLocationModal');
+        const confirmLocationButton = document.getElementById('confirmLocationSelection');
+        const locationModal = document.getElementById('locationModal');
+        const defaultCoordinates = [-6.8593, 107.6349];
+
+        if (! addressInput || ! locationModal) {
+            return;
+        }
+
+        const hasSavedAddress = addressInput.value.trim() !== '';
+        const initialCoordinates = defaultCoordinates;
+
+        const map = window.L.map('locationMap', {
+            scrollWheelZoom: false,
+        }).setView(initialCoordinates, 11);
+
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(map);
+
+        let marker = null;
+        let hasRequestedLocation = false;
+        let selectedCoordinates = null;
+
+        const setHelpMessage = (message) => {
+            helpText.textContent = message;
+            if (modalHelpText) {
+                modalHelpText.textContent = message;
+            }
+        };
+
+        const reverseGeocode = async (lat, lng) => {
+            try {
+                setHelpMessage('Mengambil alamat dari titik lokasi...');
+
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`, {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (! response.ok) {
+                    throw new Error('Reverse geocoding gagal.');
+                }
+
+                const data = await response.json();
+                const resolvedAddress = data.display_name ?? '';
+
+                if (addressInput && resolvedAddress !== '') {
+                    addressInput.value = resolvedAddress;
+                    addressInput.classList.add('is-valid');
+                    addressInput.classList.remove('is-invalid');
+                }
+
+                setHelpMessage(resolvedAddress !== ''
+                    ? 'Lokasi dan alamat berhasil diisi otomatis.'
+                    : 'Lokasi dipilih, tetapi alamat detail tidak ditemukan.');
+            } catch {
+                setHelpMessage('Lokasi dipilih, tetapi alamat otomatis tidak berhasil diambil.');
+            }
+        };
+
+        const updateLocation = (lat, lng, message, shouldResolveAddress = true) => {
+            const normalizedLat = Number.parseFloat(lat).toFixed(6);
+            const normalizedLng = Number.parseFloat(lng).toFixed(6);
+            selectedCoordinates = [Number.parseFloat(normalizedLat), Number.parseFloat(normalizedLng)];
+            setHelpMessage(message ?? `Lokasi dipilih pada ${normalizedLat}, ${normalizedLng}.`);
+
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = window.L.marker([lat, lng]).addTo(map);
+            }
+
+            if (shouldResolveAddress) {
+                reverseGeocode(normalizedLat, normalizedLng);
+            }
+        };
+
+        if (hasSavedAddress) {
+            setHelpMessage('Alamat tersimpan. Tekan ikon lokasi untuk meminta ulang lokasi perangkat.');
+        }
+
+        map.on('click', (event) => {
+            const { lat, lng } = event.latlng;
+            updateLocation(lat, lng);
+        });
+
+        const requestCurrentLocation = () => {
+            if (! navigator.geolocation) {
+                setHelpMessage('Browser ini tidak mendukung geolokasi.');
+                return;
+            }
+
+            hasRequestedLocation = true;
+            setHelpMessage('Meminta izin lokasi dari perangkat...');
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    map.setView([latitude, longitude], 15);
+                    updateLocation(latitude, longitude, 'Lokasi perangkat berhasil dipakai.');
+                },
+                () => {
+                    setHelpMessage('Izin lokasi ditolak atau lokasi perangkat tidak bisa diambil. Pilih titik langsung di peta.');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                }
+            );
+        };
+
+        const openModal = () => {
+            locationModal.hidden = false;
+            document.body.classList.add('modal-open');
+
+            window.setTimeout(() => {
+                map.invalidateSize();
+            }, 150);
+
+            if (! hasRequestedLocation) {
+                requestCurrentLocation();
+            }
+        };
+
+        const closeModal = () => {
+            locationModal.hidden = true;
+            document.body.classList.remove('modal-open');
+        };
+
+        openModalButton?.addEventListener('click', openModal);
+        confirmLocationButton?.addEventListener('click', () => {
+            if (! selectedCoordinates && addressInput.value.trim() === '') {
+                setHelpMessage('Pilih lokasi atau izinkan akses lokasi perangkat terlebih dahulu.');
+                return;
+            }
+
+            closeModal();
+        });
+
+        locationModal.querySelectorAll('[data-close-location-modal]').forEach((element) => {
+            element.addEventListener('click', closeModal);
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && ! locationModal.hidden) {
+                closeModal();
+            }
+        });
+
+        window.setTimeout(() => {
+            map.invalidateSize();
+        }, 150);
     }
 });
