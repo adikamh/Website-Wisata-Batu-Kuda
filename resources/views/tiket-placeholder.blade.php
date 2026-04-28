@@ -8,6 +8,7 @@
 </head>
 <body>
     @include('layout.navbar')
+    @include('layout.cookie-consent')
 
     <main class="ticket-placeholder-page">
         <section class="ticket-placeholder-card fade-up">

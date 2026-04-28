@@ -2,6 +2,23 @@ import '../css/app.css';
 
 // Alpine.js or vanilla JS interactions
 document.addEventListener('DOMContentLoaded', () => {
+    const cookieConsent = document.getElementById('cookieConsent');
+    const consentCookieName = 'batu_kuda_cookie_consent';
+    const consentMaxAge = 60 * 60 * 24 * 180;
+
+    const getCookie = (name) => {
+        const prefix = `${name}=`;
+        return document.cookie
+            .split(';')
+            .map((item) => item.trim())
+            .find((item) => item.startsWith(prefix))
+            ?.slice(prefix.length) ?? null;
+    };
+
+    const setCookie = (name, value, maxAge) => {
+        document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; SameSite=Lax`;
+    };
+
     // Navbar scroll effect
     const navbar = document.getElementById('navbar');
     const navToggle = document.getElementById('navToggle');
@@ -81,6 +98,17 @@ document.addEventListener('DOMContentLoaded', () => {
             navShell?.classList.remove('is-open');
             navToggle?.setAttribute('aria-expanded', 'false');
             document.body.classList.remove('nav-open');
+        });
+    });
+
+    if (cookieConsent && !getCookie(consentCookieName)) {
+        cookieConsent.hidden = false;
+    }
+
+    cookieConsent?.querySelectorAll('[data-cookie-consent]').forEach((button) => {
+        button.addEventListener('click', () => {
+            setCookie(consentCookieName, button.dataset.cookieConsent, consentMaxAge);
+            cookieConsent.hidden = true;
         });
     });
 

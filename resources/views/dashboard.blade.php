@@ -10,6 +10,7 @@
 <body>
 
 @include('layout.navbar')
+@include('layout.cookie-consent')
 
 @if (session('status'))
     <div class="flash-banner">
