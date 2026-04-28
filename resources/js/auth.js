@@ -217,14 +217,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }).addTo(map);
 
         let marker = null;
-        let hasRequestedLocation = false;
         let selectedCoordinates = null;
+        let isRequestingLocation = false;
 
         const setHelpMessage = (message) => {
             helpText.textContent = message;
             if (modalHelpText) {
                 modalHelpText.textContent = message;
             }
+        };
+
+        const setLocationButtonState = (disabled) => {
+            if (! openModalButton) {
+                return;
+            }
+
+            openModalButton.disabled = disabled;
+            openModalButton.setAttribute('aria-busy', disabled ? 'true' : 'false');
         };
 
         const reverseGeocode = async (lat, lng) => {
@@ -290,7 +299,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            hasRequestedLocation = true;
+            if (! window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                setHelpMessage('Lokasi perangkat hanya bisa dipakai pada koneksi aman HTTPS atau localhost.');
+                return;
+            }
+
+            if (isRequestingLocation) {
+                return;
+            }
+
+            isRequestingLocation = true;
+            setLocationButtonState(true);
             setHelpMessage('Meminta izin lokasi dari perangkat...');
 
             navigator.geolocation.getCurrentPosition(
@@ -298,13 +317,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     const { latitude, longitude } = position.coords;
                     map.setView([latitude, longitude], 15);
                     updateLocation(latitude, longitude, 'Lokasi perangkat berhasil dipakai.');
+                    isRequestingLocation = false;
+                    setLocationButtonState(false);
                 },
-                () => {
-                    setHelpMessage('Izin lokasi ditolak atau lokasi perangkat tidak bisa diambil. Pilih titik langsung di peta.');
+                (error) => {
+                    if (error.code === error.PERMISSION_DENIED) {
+                        setHelpMessage('Izin lokasi ditolak. Izinkan akses lokasi di browser lalu coba lagi, atau pilih titik langsung di peta.');
+                    } else if (error.code === error.TIMEOUT) {
+                        setHelpMessage('Pengambilan lokasi timeout. Coba lagi atau pilih titik langsung di peta.');
+                    } else {
+                        setHelpMessage('Lokasi perangkat tidak bisa diambil. Pilih titik langsung di peta.');
+                    }
+
+                    isRequestingLocation = false;
+                    setLocationButtonState(false);
                 },
                 {
                     enableHighAccuracy: true,
                     timeout: 10000,
+                    maximumAge: 0,
                 }
             );
         };
@@ -317,9 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 map.invalidateSize();
             }, 150);
 
-            if (! hasRequestedLocation) {
-                requestCurrentLocation();
-            }
+            requestCurrentLocation();
         };
 
         const closeModal = () => {

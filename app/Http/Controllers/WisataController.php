@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Wisata;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 
 class WisataController
@@ -12,8 +13,12 @@ class WisataController
      */
     public function dashboard()
     {
-        // Ambil data Batu Kuda dari database (id=1 atau cari by nama)
-        $wisata = Wisata::where('nama_wisata', 'like', '%Batu Kuda%')->first();
+        try {
+            // Ambil data Batu Kuda dari database (id=1 atau cari by nama)
+            $wisata = Wisata::where('nama_wisata', 'like', '%Batu Kuda%',true)->first();
+        } catch (QueryException) {
+            $wisata = null;
+        }
 
         // Fallback data statis jika DB belum terisi
         if (!$wisata) {

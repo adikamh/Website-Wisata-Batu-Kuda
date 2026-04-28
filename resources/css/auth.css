@@ -533,6 +533,15 @@ img {
     box-shadow: 0 14px 26px rgba(47, 133, 90, 0.14);
 }
 
+.location-field-btn[disabled] {
+    cursor: wait;
+    opacity: 0.76;
+}
+
+.location-field-btn[aria-busy="true"] svg {
+    animation: pulse 1s ease infinite;
+}
+
 .location-field-btn svg {
     width: 18px;
     height: 18px;
