@@ -13,15 +13,16 @@ return new class extends Migration
             $table->string('role')->default('user')->after('password');
             $table->string('Phone')->nullable()->after('role');
             $table->string('Address')->nullable()->after('Phone');
-            $table->string('otp_code', 6)->nullable()->after('role');
-            $table->boolean('is_verified')->default(false)->after('otp_code');
+            $table->string('otp')->nullable()->after('role');
+            $table->timestamp('otp_expired_at')->nullable()->after('otp');
+            $table->boolean('is_verified')->default(false)->after('otp_expired_at');
         });
     }
 
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['username', 'role', 'otp_code', 'is_verified']);
+            $table->dropColumn(['username', 'role', 'Phone', 'Address', 'otp', 'otp_expired_at', 'is_verified']);
         });
     }
 };

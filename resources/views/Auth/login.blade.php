@@ -9,8 +9,6 @@
 <body class="auth-body">
 
 <div class="auth-layout">
-
-    {{-- ── PANEL KIRI (Visual) ── --}}
     <div class="auth-visual">
         <div class="visual-bg"></div>
         <div class="visual-overlay"></div>
@@ -48,10 +46,8 @@
         </div>
     </div>
 
-    {{-- ── PANEL KANAN (Form) ── --}}
     <div class="auth-form-panel">
         <div class="auth-form-wrap">
-
             <div class="auth-header">
                 <div class="auth-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -64,7 +60,6 @@
                 <p>Masuk ke akun Batu Kuda Wisata Anda</p>
             </div>
 
-            {{-- Error Messages --}}
             @if ($errors->any())
                 <div class="alert alert-error">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -83,30 +78,38 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}" class="auth-form" id="loginForm">
+            @if (session('success'))
+                <div class="alert alert-success auto-dismiss-alert" id="successAlert">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    <p>{{ session('success') }}</p>
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('login.submit') }}" class="auth-form" id="loginForm">
                 @csrf
 
-                {{-- Email / Username --}}
-                <div class="form-group" id="fg-email">
-                    <label for="email">Email</label>
+                <div class="form-group">
+                    <label for="login">Email / Username</label>
                     <div class="input-wrap">
                         <span class="input-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
                         </span>
                         <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            placeholder="nama@email.com"
-                            value="{{ old('email') }}"
-                            autocomplete="email"
+                            type="text"
+                            id="login"
+                            name="login"
+                            placeholder="Masukkan email atau username"
+                            value="{{ old('login', session('verification_email')) }}"
+                            autocomplete="username"
                             required
                         >
                     </div>
                 </div>
 
-                {{-- Password --}}
-                <div class="form-group" id="fg-password">
+                <div class="form-group">
                     <label for="password">
                         Password
                         <a href="{{ route('password.request') }}" class="forgot-link">Lupa password?</a>
@@ -130,7 +133,6 @@
                     </div>
                 </div>
 
-                {{-- Remember me --}}
                 <div class="form-check">
                     <label class="checkbox-label">
                         <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
@@ -155,7 +157,6 @@
                     Belum punya akun?
                     <a href="{{ route('register') }}">Daftar gratis sekarang →</a>
                 </p>
-
             </form>
         </div>
 
@@ -164,8 +165,31 @@
             Kembali ke Beranda
         </a>
     </div>
-
 </div>
+
+@if (session('success'))
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const alert = document.getElementById('successAlert');
+
+            if (!alert) {
+                return;
+            }
+
+            alert.style.transition = 'opacity 0.45s ease, transform 0.45s ease, margin 0.45s ease';
+
+            window.setTimeout(() => {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-8px)';
+                alert.style.marginBottom = '0';
+
+                window.setTimeout(() => {
+                    alert.remove();
+                }, 450);
+            }, 5000);
+        });
+    </script>
+@endif
 
 </body>
 </html>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Wisata;
+use Illuminate\Support\Facades\Auth;
 
 class WisataController
 {
@@ -27,5 +28,16 @@ class WisataController
         }
 
         return view('dashboard', compact('wisata'));
+    }
+
+    public function tiket()
+    {
+        if (! Auth::check()) {
+            return redirect()
+                ->route('login')
+                ->with('status', 'Silakan login terlebih dahulu untuk mengakses tiket.');
+        }
+
+        return view('tiket-placeholder');
     }
 }
