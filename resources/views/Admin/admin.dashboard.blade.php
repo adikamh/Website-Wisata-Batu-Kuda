@@ -130,7 +130,7 @@
                 <div class="bg-white rounded-xl shadow-sm p-5 border-l-8 border-yellow-500 transition hover:shadow-md">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-gray-500 text-sm font-medium">Pesanan Baru</p>
+                            <p class="text-gray-500 text-sm font-medium">Tiket Terjual</p>
                             <p class="text-3xl font-extrabold text-gray-800 mt-1">78</p>
                             <span class="inline-flex items-center text-green-600 text-sm mt-1"><i class="fas fa-arrow-up mr-1"></i> +12%</span>
                         </div>

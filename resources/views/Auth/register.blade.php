@@ -39,7 +39,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('register') }}" class="auth-form" id="registerForm">
+            <form method="POST" action="{{ route('register.submit') }}" class="auth-form" id="registerForm">
                 @csrf
                 {{-- Role fixed sebagai 'user' --}}
                 <input type="hidden" name="role" value="user">
