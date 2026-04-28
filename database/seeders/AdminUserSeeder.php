@@ -14,8 +14,8 @@ class AdminUserSeeder extends Seeder
         User::create([
             'name' => 'Administrator',
             'username' => 'admin',
-            'email' => 'admin@wisatabatukuda.com',
-            'password' => Hash::make('password123'),
+            'email' => 'batukuda@gmail.com',
+            'password' => Hash::make('batukuda123'),
             'role' => 'admin',
             'Phone' => '081234567890',
             'Address' => 'Jl. Contoh No. 123, Kota Bandung',

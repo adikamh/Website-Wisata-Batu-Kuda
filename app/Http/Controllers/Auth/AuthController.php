@@ -31,14 +31,11 @@ class AuthController
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
 
-            $user = Auth::user();
-
-            // Redirect berdasarkan role
-            if ($user->role === 'admin') {
+            if (Auth::user()->role === 'admin') {
                 return redirect()->route('admin.dashboard');
             }
 
-            return redirect()->intended(route('home'));
+            return redirect()->route('dashboard');
         }
 
         return back()
@@ -81,7 +78,7 @@ class AuthController
 
         Auth::login($user);
 
-        return redirect()->route('home')
+        return redirect()->route('dashboard')
             ->with('status', 'Akun berhasil dibuat! Selamat datang, ' . $user->name . '.');
     }
 

@@ -25,16 +25,44 @@
         <li><a href="#galeri">Galeri</a></li>
         <li><a href="#info">Info Wisata</a></li>
         <li><a href="#lokasi">Lokasi</a></li>
-        <li>
-            <a href="{{ route('login') }}" class="btn-login">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                    <polyline points="10 17 15 12 10 7"/>
-                    <line x1="15" y1="12" x2="3" y2="12"/>
-                </svg>
-                Masuk
-            </a>
-        </li>
+        @if(Auth::check())
+            <li class="dropdown" style="position: relative;">
+                <button type="button" class="btn-login" onclick="toggleDropdown()" style="cursor: pointer; font-family: inherit; font-size: inherit;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    {{ Auth::user()->name }}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left: 4px;">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+                <div id="userDropdown" class="dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); min-width: 180px; overflow: hidden; z-index: 100;">
+                    <div style="padding: 12px 16px; border-bottom: 1px solid #eee;">
+                        <p style="margin: 0; font-weight: 600; color: #1b4332; font-size: 0.95rem;">{{ Auth::user()->name }}</p>
+                        <p style="margin: 0; font-size: 0.8rem; color: #888888;">{{ Auth::user()->email }}</p>
+                    </div>
+                    <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
+                        @csrf
+                        <button type="submit" style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 16px; background: none; border: none; color: #e63946; text-decoration: none; font-size: 0.9rem; cursor: pointer; transition: background 0.2s; font-family: inherit; text-align: left;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            Keluar
+                        </button>
+                    </form>
+                </div>
+            </li>
+        @else
+            <li>
+                <a href="{{ route('login') }}" class="btn-login">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                        <polyline points="10 17 15 12 10 7"/>
+                        <line x1="15" y1="12" x2="3" y2="12"/>
+                    </svg>
+                    Masuk
+                </a>
+            </li>
+        @endif
     </ul>
 </nav>
 
@@ -419,6 +447,33 @@
         <p>© {{ date('Y') }} Batu Kuda Wisata · Kabupaten Bandung, Jawa Barat · Dibuat dengan ❤️</p>
     </div>
 </footer>
+
+<script>
+    function toggleDropdown() {
+        var dropdown = document.getElementById('userDropdown');
+        if (dropdown.style.display === 'none') {
+            dropdown.style.display = 'block';
+        } else {
+            dropdown.style.display = 'none';
+        }
+    }
+
+    // Tutup dropdown saat klik di luar
+    document.addEventListener('click', function(event) {
+        var dropdown = document.getElementById('userDropdown');
+        var button = event.target.closest('.btn-login');
+        if (!button && dropdown.style.display === 'block') {
+            dropdown.style.display = 'none';
+        }
+    });
+</script>
+
+<style>
+    .dropdown-menu a:hover,
+    .dropdown-menu button:hover {
+        background-color: #f8f9fa !important;
+    }
+</style>
 
 </body>
 </html>
