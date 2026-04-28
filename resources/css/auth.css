@@ -46,6 +46,10 @@ body {
         linear-gradient(180deg, #f8fcf9 0%, #eef6f0 100%);
 }
 
+body.modal-open {
+    overflow: hidden;
+}
+
 a {
     color: inherit;
     text-decoration: none;
@@ -414,6 +418,11 @@ img {
     align-items: center;
 }
 
+.input-wrap--action input {
+    padding-left: 4.4rem;
+    padding-right: 1rem;
+}
+
 .input-icon {
     position: absolute;
     left: 0.95rem;
@@ -422,6 +431,10 @@ img {
     color: var(--text-muted);
     pointer-events: none;
     transition: color var(--transition);
+}
+
+.input-icon--static {
+    pointer-events: none;
 }
 
 .input-icon svg {
@@ -467,6 +480,198 @@ img {
 
 .input-wrap input.is-invalid:focus {
     box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+}
+
+.location-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.9rem;
+    margin-bottom: 0.9rem;
+}
+
+.location-btn {
+    flex-shrink: 0;
+    padding: 0.72rem 1rem;
+    border: 1px solid rgba(47, 133, 90, 0.16);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--green-mid);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+
+.location-btn--block {
+    width: 100%;
+    justify-content: center;
+}
+
+.location-field-btn {
+    position: absolute;
+    left: 0.55rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(47, 133, 90, 0.16);
+    border-radius: 14px;
+    background: var(--white);
+    color: var(--green-mid);
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(47, 133, 90, 0.08);
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.location-field-btn:hover {
+    transform: translateY(-1px);
+    color: var(--green-deep);
+    border-color: rgba(47, 133, 90, 0.28);
+    box-shadow: 0 14px 26px rgba(47, 133, 90, 0.14);
+}
+
+.location-field-btn[disabled] {
+    cursor: wait;
+    opacity: 0.76;
+}
+
+.location-field-btn[aria-busy="true"] svg {
+    animation: pulse 1s ease infinite;
+}
+
+.location-field-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.location-inline-help {
+    margin-top: 0.45rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.location-btn--muted {
+    color: var(--text-mid);
+    border-color: var(--border);
+}
+
+.location-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(47, 133, 90, 0.32);
+    box-shadow: 0 10px 22px rgba(47, 133, 90, 0.12);
+}
+
+.location-help {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+    text-align: left;
+}
+
+.location-help--modal {
+    margin-bottom: 0.9rem;
+    text-align: right;
+}
+
+.location-map {
+    overflow: hidden;
+    height: 280px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+}
+
+.leaflet-container {
+    font-family: 'DM Sans', sans-serif;
+}
+
+.leaflet-control-attribution {
+    font-size: 10px;
+}
+
+.location-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: grid;
+    place-items: center;
+    padding: 1.2rem;
+}
+
+.location-modal[hidden] {
+    display: none !important;
+}
+
+.location-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(17, 38, 27, 0.56);
+    backdrop-filter: blur(8px);
+}
+
+.location-modal__dialog {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 760px);
+    max-height: calc(100vh - 2.4rem);
+    overflow: auto;
+    padding: 1.25rem;
+    border: 1px solid rgba(47, 133, 90, 0.14);
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 28px 70px rgba(16, 53, 34, 0.2);
+}
+
+.location-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.location-modal__eyebrow {
+    margin-bottom: 0.3rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--green-fresh);
+}
+
+.location-modal__header h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.45rem;
+    color: var(--green-deepest);
+}
+
+.location-modal__close {
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--white);
+    color: var(--text-mid);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.location-modal__description {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+.location-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+    margin-top: 1rem;
 }
 
 .toggle-pw {
@@ -685,6 +890,29 @@ img {
 
     .form-row {
         grid-template-columns: 1fr;
+    }
+
+    .location-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .location-help {
+        text-align: left;
+    }
+
+    .location-help--modal {
+        text-align: left;
+    }
+}
+
+@media (max-width: 640px) {
+    .location-modal__actions {
+        flex-direction: column-reverse;
+    }
+
+    .location-modal__actions .location-btn {
+        width: 100%;
     }
 }
 
