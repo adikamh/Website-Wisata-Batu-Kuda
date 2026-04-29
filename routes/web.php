@@ -4,7 +4,6 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ChatbotController;
 
 Route::get('/', [WisataController::class, 'dashboard'])->name('home');
 Route::get('/tiket', [WisataController::class, 'tiket'])->name('tiket');
@@ -16,9 +15,12 @@ Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('verif
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('verify.otp.submit');
 Route::post('/verify-otp/resend', [AuthController::class, 'resendOtp'])->name('verify.otp.resend');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-Route::get('/forgot-password', function () {
-    return view('Auth.forgot-password');
-})->name('password.request');
+Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+Route::post('/forgot-password', [AuthController::class, 'sendResetOtp'])->name('password.email');
+Route::get('/reset-otp', [AuthController::class, 'showResetOtp'])->name('reset.otp');
+Route::post('/reset-otp', [AuthController::class, 'verifyResetOtp'])->name('reset.otp.submit');
+Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('password.reset');
+Route::post('/reset-password', [AuthController::class, 'updatePassword'])->name('password.update');
 
 Route::middleware('auth')->get('dashboard', function () {
     return view('dashboard');
@@ -31,4 +33,3 @@ Route::middleware(['auth'])->get('admin/dashboard', function () {
 
     return view()->file(resource_path('views/Admin/admin.dashboard.blade.php'));
 })->name('admin.dashboard');
-Route::post('/chat', ChatbotController::class);
