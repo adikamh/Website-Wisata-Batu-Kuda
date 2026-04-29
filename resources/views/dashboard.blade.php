@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Batu Kuda - Destinasi Wisata Alam di Kabupaten Bandung, Jawa Barat">
     <title>Batu Kuda | Wisata Alam Kabupaten Bandung</title>
@@ -382,6 +383,6 @@
         <p>© {{ date('Y') }} Batu Kuda Wisata · Kabupaten Bandung, Jawa Barat · Dibuat dengan hati</p>
     </div>
 </footer>
-
+@include('components.chatbot')
 </body>
 </html>

@@ -212,6 +212,30 @@
     </script>
     @endif
 
+@if (session('success'))
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const alert = document.getElementById('successAlert');
+
+            if (!alert) {
+                return;
+            }
+
+            alert.style.transition = 'opacity 0.45s ease, transform 0.45s ease, margin 0.45s ease';
+
+            window.setTimeout(() => {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-8px)';
+                alert.style.marginBottom = '0';
+
+                window.setTimeout(() => {
+                    alert.remove();
+                }, 450);
+            }, 5000);
+        });
+    </script>
+@endif
+
 </body>
 
 </html>
