@@ -1,164 +1,383 @@
-// ─── auth.js ───────────────────────────────────────────────
-// Password toggle, strength meter, match check, form loader
-
 document.addEventListener('DOMContentLoaded', () => {
+    const registerForm = document.getElementById('registerForm');
 
-    // ── 1. Toggle show/hide password ──────────────────────
-    document.querySelectorAll('.toggle-pw').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const targetId = btn.dataset.target;
-            const input    = document.getElementById(targetId);
-            const eyeShow  = btn.querySelector('.eye-show');
-            const eyeHide  = btn.querySelector('.eye-hide');
+    document.querySelectorAll('.toggle-pw').forEach((button) => {
+        button.addEventListener('click', () => {
+            const target = document.getElementById(button.dataset.target);
+            const eyeShow = button.querySelector('.eye-show');
+            const eyeHide = button.querySelector('.eye-hide');
 
-            if (input.type === 'password') {
-                input.type   = 'text';
-                eyeShow.style.display = 'none';
-                eyeHide.style.display = 'block';
-            } else {
-                input.type   = 'password';
-                eyeShow.style.display = 'block';
-                eyeHide.style.display = 'none';
+            if (! target) {
+                return;
+            }
+
+            const showPassword = target.type === 'password';
+            target.type = showPassword ? 'text' : 'password';
+
+            if (eyeShow && eyeHide) {
+                eyeShow.style.display = showPassword ? 'none' : 'block';
+                eyeHide.style.display = showPassword ? 'block' : 'none';
             }
         });
     });
 
-    // ── 2. Password strength meter (register only) ─────────
-    const pwInput = document.getElementById('password');
-    const pwBar   = document.getElementById('pwBar');
-    const pwHint  = document.getElementById('pwHint');
+    const passwordInput = document.getElementById('password');
+    const passwordBar = document.getElementById('pwBar');
+    const passwordHint = document.getElementById('pwHint');
+    const passwordConfirmation = document.getElementById('password_confirmation');
+    const matchHint = document.getElementById('matchHint');
+    const usernameInput = document.getElementById('username');
+    const usernameStatus = document.getElementById('username-status');
+    const loginInput = document.getElementById('login');
 
-    if (pwInput && pwBar) {
-        pwInput.addEventListener('input', () => {
-            const val      = pwInput.value;
-            const strength = calcStrength(val);
-            const colors   = ['#e05252', '#e88c3a', '#c8a44a', '#40916c', '#2d6a4f'];
-            const labels   = ['Sangat Lemah', 'Lemah', 'Cukup', 'Kuat', 'Sangat Kuat'];
-            const widths   = ['20%', '40%', '60%', '80%', '100%'];
+    if (passwordInput && passwordBar) {
+        passwordInput.addEventListener('input', () => {
+            const value = passwordInput.value;
+            const score = getPasswordScore(value);
+            const colors = ['#dc2626', '#ea580c', '#d97706', '#2f855a', '#276749'];
+            const labels = ['Sangat Lemah', 'Lemah', 'Cukup', 'Kuat', 'Sangat Kuat'];
+            const widths = ['20%', '40%', '60%', '80%', '100%'];
 
-            if (val.length === 0) {
-                pwBar.style.width      = '0%';
-                pwHint.textContent     = '';
-                pwHint.style.color     = '';
+            if (value.length === 0) {
+                passwordBar.style.width = '0%';
+                passwordHint.textContent = '';
+                passwordHint.style.color = '';
             } else {
-                pwBar.style.width      = widths[strength];
-                pwBar.style.background = colors[strength];
-                pwHint.textContent     = labels[strength];
-                pwHint.style.color     = colors[strength];
+                passwordBar.style.width = widths[score];
+                passwordBar.style.background = colors[score];
+                passwordHint.textContent = labels[score];
+                passwordHint.style.color = colors[score];
             }
 
-            // trigger match check too
-            checkMatch();
+            validatePasswordMatch();
         });
     }
 
-    function calcStrength(pw) {
-        let score = 0;
-        if (pw.length >= 8)   score++;
-        if (pw.length >= 12)  score++;
-        if (/[A-Z]/.test(pw)) score++;
-        if (/[0-9]/.test(pw)) score++;
-        if (/[^A-Za-z0-9]/.test(pw)) score++;
-        return Math.min(score, 4);
+    if (passwordConfirmation) {
+        passwordConfirmation.addEventListener('input', validatePasswordMatch);
     }
-
-    // ── 3. Password match check ────────────────────────────
-    const pwConfirm  = document.getElementById('password_confirmation');
-    const matchHint  = document.getElementById('matchHint');
-
-    function checkMatch() {
-        if (!pwConfirm || !matchHint) return;
-        if (pwConfirm.value === '') {
-            matchHint.textContent = '';
-            pwConfirm.classList.remove('is-valid', 'is-invalid');
-            return;
-        }
-        if (pwInput && pwConfirm.value === pwInput.value) {
-            matchHint.textContent  = '✓ Password cocok';
-            matchHint.style.color  = 'var(--green-fresh)';
-            pwConfirm.classList.add('is-valid');
-            pwConfirm.classList.remove('is-invalid');
-        } else {
-            matchHint.textContent  = '✗ Password tidak cocok';
-            matchHint.style.color  = 'var(--error)';
-            pwConfirm.classList.add('is-invalid');
-            pwConfirm.classList.remove('is-valid');
-        }
-    }
-
-    pwConfirm?.addEventListener('input', checkMatch);
-
-    // ── 4. Username validation feedback ────────────────────
-    const usernameInput  = document.getElementById('username');
-    const usernameStatus = document.getElementById('username-status');
 
     if (usernameInput && usernameStatus) {
         usernameInput.addEventListener('input', () => {
-            const val = usernameInput.value.trim();
-            if (val === '') {
+            const value = usernameInput.value.trim();
+            const valid = /^[a-zA-Z0-9_]{3,20}$/.test(value);
+
+            if (value === '') {
                 usernameStatus.textContent = '';
                 usernameInput.classList.remove('is-valid', 'is-invalid');
                 return;
             }
-            if (/^[a-zA-Z0-9_]{3,20}$/.test(val)) {
-                usernameStatus.textContent  = '✓ Valid';
-                usernameStatus.style.color  = 'var(--green-fresh)';
-                usernameInput.classList.add('is-valid');
-                usernameInput.classList.remove('is-invalid');
-            } else {
-                usernameStatus.textContent  = '✗ 3-20 karakter, tanpa spasi';
-                usernameStatus.style.color  = 'var(--error)';
-                usernameInput.classList.add('is-invalid');
-                usernameInput.classList.remove('is-valid');
+
+            usernameStatus.textContent = valid ? 'Username valid' : '3-20 karakter tanpa spasi';
+            usernameStatus.style.color = valid ? 'var(--green-fresh)' : 'var(--error)';
+            usernameInput.classList.toggle('is-valid', valid);
+            usernameInput.classList.toggle('is-invalid', ! valid);
+        });
+    }
+
+    if (loginInput) {
+        loginInput.addEventListener('blur', () => {
+            const value = loginInput.value.trim();
+
+            if (value === '') {
+                loginInput.classList.remove('is-valid', 'is-invalid');
+                return;
             }
+
+            const looksLikeEmail = value.includes('@');
+            const valid = looksLikeEmail
+                ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+                : /^[a-zA-Z0-9_]{3,50}$/.test(value);
+
+            loginInput.classList.toggle('is-valid', valid);
+            loginInput.classList.toggle('is-invalid', ! valid);
         });
     }
 
-    // ── 5. Email live validation ────────────────────────────
-    const emailInput = document.getElementById('email');
-    if (emailInput) {
-        emailInput.addEventListener('blur', () => {
-            const val   = emailInput.value.trim();
-            const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
-            emailInput.classList.toggle('is-valid',   val !== '' && valid);
-            emailInput.classList.toggle('is-invalid', val !== '' && !valid);
-        });
-    }
-
-    // ── 6. Submit loader ────────────────────────────────────
-    ['loginForm', 'registerForm'].forEach(id => {
-        const form = document.getElementById(id);
-        if (!form) return;
-
-        form.addEventListener('submit', (e) => {
-            const btn    = form.querySelector('#submitBtn');
-            const text   = btn?.querySelector('.btn-text');
-            const icon   = btn?.querySelector('.btn-icon');
-            const loader = btn?.querySelector('.btn-loader');
-
-            if (!btn) return;
-
-            // Basic validation before showing loader
-            if (!form.checkValidity()) return;
-
-            btn.disabled            = true;
-            if (text)   text.style.opacity   = '0.7';
-            if (icon)   icon.style.display   = 'none';
-            if (loader) loader.style.display = 'flex';
-        });
-    });
-
-    // ── 7. Input focus animation ────────────────────────────
-    document.querySelectorAll('.input-wrap input').forEach(input => {
+    document.querySelectorAll('.input-wrap input, .input-wrap textarea').forEach((input) => {
         input.addEventListener('focus', () => {
-            input.closest('.input-wrap')?.querySelector('.input-icon')
-                ?.style.setProperty('color', 'var(--green-fresh)');
+            input.closest('.input-wrap')?.querySelector('.input-icon')?.style.setProperty('color', 'var(--green-fresh)');
         });
+
         input.addEventListener('blur', () => {
-            if (!input.classList.contains('is-valid') && !input.classList.contains('is-invalid')) {
-                input.closest('.input-wrap')?.querySelector('.input-icon')
-                    ?.style.setProperty('color', 'var(--text-muted)');
+            if (! input.classList.contains('is-valid') && ! input.classList.contains('is-invalid')) {
+                input.closest('.input-wrap')?.querySelector('.input-icon')?.style.setProperty('color', 'var(--text-muted)');
             }
         });
     });
+
+    if (registerForm && typeof window.L !== 'undefined') {
+        initLocationPicker();
+    }
+
+    ['loginForm', 'registerForm'].forEach((formId) => {
+        const form = document.getElementById(formId);
+
+        if (! form) {
+            return;
+        }
+
+        form.addEventListener('submit', () => {
+            if (! form.checkValidity()) {
+                return;
+            }
+
+            const button = form.querySelector('#submitBtn');
+            const text = button?.querySelector('.btn-text');
+            const icon = button?.querySelector('.btn-icon');
+            const loader = button?.querySelector('.btn-loader');
+
+            if (! button) {
+                return;
+            }
+
+            button.disabled = true;
+
+            if (text) {
+                text.style.opacity = '0.72';
+            }
+
+            if (icon) {
+                icon.style.display = 'none';
+            }
+
+            if (loader) {
+                loader.style.display = 'flex';
+            }
+        });
+    });
+
+    function getPasswordScore(password) {
+        let score = 0;
+
+        if (password.length >= 8) {
+            score++;
+        }
+
+        if (password.length >= 12) {
+            score++;
+        }
+
+        if (/[A-Z]/.test(password)) {
+            score++;
+        }
+
+        if (/[0-9]/.test(password)) {
+            score++;
+        }
+
+        if (/[^A-Za-z0-9]/.test(password)) {
+            score++;
+        }
+
+        return Math.min(score, 4);
+    }
+
+    function validatePasswordMatch() {
+        if (! passwordConfirmation || ! matchHint) {
+            return;
+        }
+
+        if (passwordConfirmation.value === '') {
+            matchHint.textContent = '';
+            passwordConfirmation.classList.remove('is-valid', 'is-invalid');
+            return;
+        }
+
+        const matched = passwordInput && passwordConfirmation.value === passwordInput.value;
+        matchHint.textContent = matched ? 'Password cocok' : 'Password tidak cocok';
+        matchHint.style.color = matched ? 'var(--green-fresh)' : 'var(--error)';
+        passwordConfirmation.classList.toggle('is-valid', matched);
+        passwordConfirmation.classList.toggle('is-invalid', ! matched);
+    }
+
+    function initLocationPicker() {
+        const addressInput = document.getElementById('address');
+        const helpText = document.getElementById('locationHelp');
+        const modalHelpText = document.getElementById('locationModalHelp');
+        const openModalButton = document.getElementById('openLocationModal');
+        const confirmLocationButton = document.getElementById('confirmLocationSelection');
+        const locationModal = document.getElementById('locationModal');
+        const defaultCoordinates = [-6.8593, 107.6349];
+
+        if (! addressInput || ! locationModal) {
+            return;
+        }
+
+        const hasSavedAddress = addressInput.value.trim() !== '';
+        const initialCoordinates = defaultCoordinates;
+
+        const map = window.L.map('locationMap', {
+            scrollWheelZoom: false,
+        }).setView(initialCoordinates, 11);
+
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(map);
+
+        let marker = null;
+        let selectedCoordinates = null;
+        let isRequestingLocation = false;
+
+        const setHelpMessage = (message) => {
+            helpText.textContent = message;
+            if (modalHelpText) {
+                modalHelpText.textContent = message;
+            }
+        };
+
+        const setLocationButtonState = (disabled) => {
+            if (! openModalButton) {
+                return;
+            }
+
+            openModalButton.disabled = disabled;
+            openModalButton.setAttribute('aria-busy', disabled ? 'true' : 'false');
+        };
+
+        const reverseGeocode = async (lat, lng) => {
+            try {
+                setHelpMessage('Mengambil alamat dari titik lokasi...');
+
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`, {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (! response.ok) {
+                    throw new Error('Reverse geocoding gagal.');
+                }
+
+                const data = await response.json();
+                const resolvedAddress = data.display_name ?? '';
+
+                if (addressInput && resolvedAddress !== '') {
+                    addressInput.value = resolvedAddress;
+                    addressInput.classList.add('is-valid');
+                    addressInput.classList.remove('is-invalid');
+                }
+
+                setHelpMessage(resolvedAddress !== ''
+                    ? 'Lokasi dan alamat berhasil diisi otomatis.'
+                    : 'Lokasi dipilih, tetapi alamat detail tidak ditemukan.');
+            } catch {
+                setHelpMessage('Lokasi dipilih, tetapi alamat otomatis tidak berhasil diambil.');
+            }
+        };
+
+        const updateLocation = (lat, lng, message, shouldResolveAddress = true) => {
+            const normalizedLat = Number.parseFloat(lat).toFixed(6);
+            const normalizedLng = Number.parseFloat(lng).toFixed(6);
+            selectedCoordinates = [Number.parseFloat(normalizedLat), Number.parseFloat(normalizedLng)];
+            setHelpMessage(message ?? `Lokasi dipilih pada ${normalizedLat}, ${normalizedLng}.`);
+
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = window.L.marker([lat, lng]).addTo(map);
+            }
+
+            if (shouldResolveAddress) {
+                reverseGeocode(normalizedLat, normalizedLng);
+            }
+        };
+
+        if (hasSavedAddress) {
+            setHelpMessage('Alamat tersimpan. Tekan ikon lokasi untuk meminta ulang lokasi perangkat.');
+        }
+
+        map.on('click', (event) => {
+            const { lat, lng } = event.latlng;
+            updateLocation(lat, lng);
+        });
+
+        const requestCurrentLocation = () => {
+            if (! navigator.geolocation) {
+                setHelpMessage('Browser ini tidak mendukung geolokasi.');
+                return;
+            }
+
+            if (! window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                setHelpMessage('Lokasi perangkat hanya bisa dipakai pada koneksi aman HTTPS atau localhost.');
+                return;
+            }
+
+            if (isRequestingLocation) {
+                return;
+            }
+
+            isRequestingLocation = true;
+            setLocationButtonState(true);
+            setHelpMessage('Meminta izin lokasi dari perangkat...');
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    map.setView([latitude, longitude], 15);
+                    updateLocation(latitude, longitude, 'Lokasi perangkat berhasil dipakai.');
+                    isRequestingLocation = false;
+                    setLocationButtonState(false);
+                },
+                (error) => {
+                    if (error.code === error.PERMISSION_DENIED) {
+                        setHelpMessage('Izin lokasi ditolak. Izinkan akses lokasi di browser lalu coba lagi, atau pilih titik langsung di peta.');
+                    } else if (error.code === error.TIMEOUT) {
+                        setHelpMessage('Pengambilan lokasi timeout. Coba lagi atau pilih titik langsung di peta.');
+                    } else {
+                        setHelpMessage('Lokasi perangkat tidak bisa diambil. Pilih titik langsung di peta.');
+                    }
+
+                    isRequestingLocation = false;
+                    setLocationButtonState(false);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0,
+                }
+            );
+        };
+
+        const openModal = () => {
+            locationModal.hidden = false;
+            document.body.classList.add('modal-open');
+
+            window.setTimeout(() => {
+                map.invalidateSize();
+            }, 150);
+
+            requestCurrentLocation();
+        };
+
+        const closeModal = () => {
+            locationModal.hidden = true;
+            document.body.classList.remove('modal-open');
+        };
+
+        openModalButton?.addEventListener('click', openModal);
+        confirmLocationButton?.addEventListener('click', () => {
+            if (! selectedCoordinates && addressInput.value.trim() === '') {
+                setHelpMessage('Pilih lokasi atau izinkan akses lokasi perangkat terlebih dahulu.');
+                return;
+            }
+
+            closeModal();
+        });
+
+        locationModal.querySelectorAll('[data-close-location-modal]').forEach((element) => {
+            element.addEventListener('click', closeModal);
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && ! locationModal.hidden) {
+                closeModal();
+            }
+        });
+
+        window.setTimeout(() => {
+            map.invalidateSize();
+        }, 150);
+    }
 });

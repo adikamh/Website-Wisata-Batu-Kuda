@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Batu Kuda - Destinasi Wisata Alam di Kabupaten Bandung, Jawa Barat">
     <title>Batu Kuda | Wisata Alam Kabupaten Bandung</title>
@@ -9,36 +10,15 @@
 </head>
 <body>
 
-{{-- ══════════════ NAVBAR ══════════════ --}}
-<nav id="navbar">
-    <a href="/" class="nav-logo">
-        {{-- Mountain + Leaf Icon --}}
-        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 26L12 12L18 20L22 14L28 26H4Z" fill="#74c69d" opacity="0.9"/>
-            <path d="M18 8C18 8 24 10 22 18C20 15 17 14 16 11C15 14 13 16 11 18C9 10 16 6 18 8Z" fill="#b7e4c7"/>
-        </svg>
-        Batu Kuda
-    </a>
+@include('layout.navbar')
+@include('layout.cookie-consent')
 
-    <ul class="nav-links">
-        <li><a href="#tentang">Tentang</a></li>
-        <li><a href="#galeri">Galeri</a></li>
-        <li><a href="#info">Info Wisata</a></li>
-        <li><a href="#lokasi">Lokasi</a></li>
-        <li>
-            <a href="{{ route('login') }}" class="btn-login">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                    <polyline points="10 17 15 12 10 7"/>
-                    <line x1="15" y1="12" x2="3" y2="12"/>
-                </svg>
-                Masuk
-            </a>
-        </li>
-    </ul>
-</nav>
+@if (session('status'))
+    <div class="flash-banner">
+        {{ session('status') }}
+    </div>
+@endif
 
-{{-- ══════════════ HERO ══════════════ --}}
 <section class="hero">
     <div class="hero-bg"></div>
 
@@ -84,16 +64,11 @@
     </div>
 </section>
 
-{{-- ══════════════ ABOUT ══════════════ --}}
 <section class="about" id="tentang">
     <div class="container">
         <div class="about-grid">
-
-            {{-- Image side --}}
             <div class="about-img-wrap fade-up">
                 <div class="about-img-main">
-                    {{-- Jika ada gambar dari database: --}}
-                    {{-- <img src="{{ $wisata->gambar_url }}" alt="{{ $wisata->nama_wisata }}"> --}}
                     <img
                         src="https://images.unsplash.com/photo-1501854140801-50d01698950b?w=900&q=80"
                         alt="Pemandangan Batu Kuda Bandung"
@@ -111,7 +86,6 @@
                 </div>
             </div>
 
-            {{-- Text side --}}
             <div class="fade-up">
                 <div class="section-tag">Tentang Destinasi</div>
                 <h2 class="section-title">
@@ -119,8 +93,6 @@
                     Berbentuk Kuda
                 </h2>
                 <p class="section-subtitle">
-                    {{-- Deskripsi dari database: --}}
-                    {{-- {{ $wisata->deskripsi }} --}}
                     Batu Kuda adalah kawasan wisata alam yang terletak di kawasan hutan Perhutani, Desa Cikadut,
                     Kecamatan Cimenyan, Kabupaten Bandung. Namanya berasal dari sebuah formasi batu besar yang
                     konon menyerupai kuda yang sedang duduk — menjadi daya tarik utama yang penuh misteri dan legenda.
@@ -166,7 +138,6 @@
     </div>
 </section>
 
-{{-- ══════════════ STATS ══════════════ --}}
 <section class="stats">
     <div class="container">
         <div class="stats-grid">
@@ -202,7 +173,6 @@
     </div>
 </section>
 
-{{-- ══════════════ GALLERY ══════════════ --}}
 <section class="gallery" id="galeri">
     <div class="container">
         <div class="gallery-header fade-up">
@@ -238,11 +208,9 @@
     </div>
 </section>
 
-{{-- ══════════════ INFO WISATA ══════════════ --}}
 <section class="info-section" id="info">
     <div class="container">
         <div class="info-grid">
-            {{-- Info Card --}}
             <div class="fade-up">
                 <div class="section-tag">Informasi</div>
                 <h2 class="section-title">Detail Wisata</h2>
@@ -251,7 +219,7 @@
                 </p>
 
                 <div class="info-card">
-                    <h3>📍 Info Kunjungan</h3>
+                    <h3>Info Kunjungan</h3>
 
                     <div class="info-row">
                         <div class="info-icon">
@@ -259,7 +227,6 @@
                         </div>
                         <div>
                             <div class="info-label">Lokasi</div>
-                            {{-- {{ $wisata->lokasi }} --}}
                             <div class="info-value">Desa Cikadut, Kec. Cimenyan,<br>Kabupaten Bandung, Jawa Barat</div>
                         </div>
                     </div>
@@ -300,7 +267,6 @@
                 </div>
             </div>
 
-            {{-- Tips --}}
             <div class="fade-up">
                 <div class="section-tag">Panduan</div>
                 <h2 class="section-title">Tips Berkunjung</h2>
@@ -350,7 +316,6 @@
     </div>
 </section>
 
-{{-- ══════════════ MAP ══════════════ --}}
 <section class="map-section" id="lokasi">
     <div class="container">
         <div class="fade-up" style="text-align:center;">
@@ -373,7 +338,6 @@
     </div>
 </section>
 
-{{-- ══════════════ CTA ══════════════ --}}
 <section class="cta-section">
     <div class="fade-up">
         <h2>Siap Menjelajahi Batu Kuda?</h2>
@@ -385,7 +349,6 @@
     </div>
 </section>
 
-{{-- ══════════════ FOOTER ══════════════ --}}
 <footer>
     <div class="footer-inner">
         <div class="footer-brand">
@@ -404,6 +367,7 @@
                 <li><a href="#tentang">Tentang</a></li>
                 <li><a href="#galeri">Galeri</a></li>
                 <li><a href="#info">Info Wisata</a></li>
+                <li><a href="{{ route('tiket') }}">Tiket</a></li>
                 <li><a href="#lokasi">Lokasi</a></li>
             </ul>
         </div>
@@ -416,9 +380,9 @@
         </div>
     </div>
     <div class="footer-bottom">
-        <p>© {{ date('Y') }} Batu Kuda Wisata · Kabupaten Bandung, Jawa Barat · Dibuat dengan ❤️</p>
+        <p>© {{ date('Y') }} Batu Kuda Wisata · Kabupaten Bandung, Jawa Barat · Dibuat dengan hati</p>
     </div>
 </footer>
-
+@include('components.chatbot')
 </body>
 </html>
