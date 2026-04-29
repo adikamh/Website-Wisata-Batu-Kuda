@@ -49,12 +49,12 @@
             <!-- Menu Utama heading -->
             <div class="text-xs uppercase text-gray-500 tracking-wider font-semibold px-3 mb-2">Menu Utama</div>
             
-            <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-gray-700 bg-opacity-50 text-white transition-smooth hover:bg-gray-700">
+            <a href="#kelola-user" data-admin-menu="kelola-user" class="admin-menu-link flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-gray-700 bg-opacity-50 text-white transition-smooth hover:bg-gray-700">
                 <i class="fas fa-users w-5"></i>
                 <span>Kelola user</span>
             </a>
             
-            <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-300 transition-smooth hover:bg-gray-700 hover:text-white">
+            <a href="#tiket" data-admin-menu="tiket" class="admin-menu-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-300 transition-smooth hover:bg-gray-700 hover:text-white">
                 <i class="fas fa-boxes w-5"></i>
                 <span>Tiket</span>
             </a>
@@ -95,6 +95,7 @@
 
         <!-- Dashboard Content -->
         <div class="p-6 md:p-8">
+            <div id="kelola-user" data-admin-section="kelola-user">
             
             <!-- Stat Cards Row -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -285,13 +286,234 @@
                     </div>
                 </div>
             </div>
+            </div>
+
+            <!-- Menu Tiket -->
+            <div id="tiket" data-admin-section="tiket" class="bg-white rounded-xl shadow-sm overflow-hidden hidden">
+                <div class="px-6 py-4 border-b bg-gray-50">
+                    <h2 class="text-lg font-bold text-gray-700"><i class="fas fa-ticket-alt mr-2 text-indigo-500"></i> Tiket</h2>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    <div class="border rounded-xl p-5">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                            <h3 class="text-base font-bold text-gray-700">Tiket untuk CRUD</h3>
+                            <button type="button" class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">
+                                <i class="fas fa-plus mr-2"></i> Tambah Tiket
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Tiket</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                    <tr>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Tiket Masuk</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Rp 15.000</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm">
+                                            <button type="button" class="text-indigo-600 hover:text-indigo-900 mr-3"><i class="fas fa-edit"></i></button>
+                                            <button type="button" class="text-red-600 hover:text-red-900"><i class="fas fa-trash-alt"></i></button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="border rounded-xl p-5">
+                        <h3 class="text-base font-bold text-gray-700 mb-4">Unduh Laporan</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="#" class="inline-flex items-center px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition">
+                                <i class="fas fa-file-pdf mr-2"></i> Daftar Pengunjung PDF
+                            </a>
+                            <a href="#" class="inline-flex items-center px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition">
+                                <i class="fas fa-file-excel mr-2"></i> Keuangan Excel
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="border rounded-xl overflow-hidden">
+                        <div class="px-5 py-4 border-b bg-gray-50">
+                            <h3 class="text-base font-bold text-gray-700">Tiket yang Sudah Dibeli</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resi</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detail</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                    <tr class="hover:bg-gray-50 transition align-top">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">12/05/2026</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000123</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">andiwijaya</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <button type="button" data-ticket-detail-open data-jumlah="2" data-masuk="12/05/2026" data-keluar="13/05/2026" data-nama="Andi Wijaya" data-paket="Camping" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
+                                                <i class="fas fa-eye mr-1"></i> Detail
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 transition align-top">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">14/05/2026</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000124</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">sitinur</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <button type="button" data-ticket-detail-open data-jumlah="4" data-masuk="14/05/2026" data-keluar="14/05/2026" data-nama="Siti Nurhaliza" data-paket="Tiket Masuk" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
+                                                <i class="fas fa-eye mr-1"></i> Detail
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 transition align-top">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">15/05/2026</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000125</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">budisantoso</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <button type="button" data-ticket-detail-open data-jumlah="1" data-masuk="15/05/2026" data-keluar="16/05/2026" data-nama="Budi Santoso" data-paket="Camping" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
+                                                <i class="fas fa-eye mr-1"></i> Detail
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 transition align-top">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">17/05/2026</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000126</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">dewilestari</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <button type="button" data-ticket-detail-open data-jumlah="3" data-masuk="17/05/2026" data-keluar="18/05/2026" data-nama="Dewi Lestari" data-paket="Family Camp" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
+                                                <i class="fas fa-eye mr-1"></i> Detail
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
+</div>
+
+<!-- Modal Detail Tiket -->
+<div id="ticketDetailModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50 px-4">
+    <div class="w-full max-w-lg rounded-xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b px-6 py-4">
+            <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-receipt mr-2 text-indigo-500"></i> Detail Tiket</h3>
+            <button type="button" data-ticket-detail-close class="text-gray-400 hover:text-gray-700">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6">
+            <div class="rounded-lg bg-gray-50 p-4">
+                <span class="block text-xs text-gray-400 uppercase">Jumlah Tiket</span>
+                <span id="modalJumlahTiket" class="font-semibold text-gray-800">2</span>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4">
+                <span class="block text-xs text-gray-400 uppercase">Tanggal Masuk</span>
+                <span id="modalTanggalMasuk" class="font-semibold text-gray-800">12/05/2026</span>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4">
+                <span class="block text-xs text-gray-400 uppercase">Tanggal Keluar</span>
+                <span id="modalTanggalKeluar" class="font-semibold text-gray-800">13/05/2026</span>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4">
+                <span class="block text-xs text-gray-400 uppercase">Nama</span>
+                <span id="modalNama" class="font-semibold text-gray-800">Andi Wijaya</span>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4 sm:col-span-2">
+                <span class="block text-xs text-gray-400 uppercase">Paket</span>
+                <span id="modalPaket" class="font-semibold text-gray-800">Camping</span>
+            </div>
+        </div>
+        <div class="flex justify-end border-t bg-gray-50 px-6 py-4">
+            <button type="button" data-ticket-detail-close class="px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-900 transition">
+                Tutup
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- CHART INIT SCRIPT -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const menuLinks = document.querySelectorAll('[data-admin-menu]');
+        const sections = document.querySelectorAll('[data-admin-section]');
+
+        function showSection(sectionName) {
+            sections.forEach(function (section) {
+                section.classList.toggle('hidden', section.dataset.adminSection !== sectionName);
+            });
+
+            menuLinks.forEach(function (link) {
+                const isActive = link.dataset.adminMenu === sectionName;
+                link.classList.toggle('bg-gray-700', isActive);
+                link.classList.toggle('bg-opacity-50', isActive);
+                link.classList.toggle('text-white', isActive);
+                link.classList.toggle('text-gray-300', !isActive);
+            });
+        }
+
+        menuLinks.forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                const sectionName = link.dataset.adminMenu;
+                showSection(sectionName);
+                history.replaceState(null, '', '#' + sectionName);
+            });
+        });
+
+        if (window.location.hash === '#tiket') {
+            showSection('tiket');
+        }
+
+        const ticketDetailModal = document.getElementById('ticketDetailModal');
+        const openTicketDetailButtons = document.querySelectorAll('[data-ticket-detail-open]');
+        const closeTicketDetailButtons = document.querySelectorAll('[data-ticket-detail-close]');
+        const modalJumlahTiket = document.getElementById('modalJumlahTiket');
+        const modalTanggalMasuk = document.getElementById('modalTanggalMasuk');
+        const modalTanggalKeluar = document.getElementById('modalTanggalKeluar');
+        const modalNama = document.getElementById('modalNama');
+        const modalPaket = document.getElementById('modalPaket');
+
+        function openTicketDetailModal(button) {
+            modalJumlahTiket.textContent = button.dataset.jumlah;
+            modalTanggalMasuk.textContent = button.dataset.masuk;
+            modalTanggalKeluar.textContent = button.dataset.keluar;
+            modalNama.textContent = button.dataset.nama;
+            modalPaket.textContent = button.dataset.paket;
+            ticketDetailModal.classList.remove('hidden');
+            ticketDetailModal.classList.add('flex');
+        }
+
+        function closeTicketDetailModal() {
+            ticketDetailModal.classList.add('hidden');
+            ticketDetailModal.classList.remove('flex');
+        }
+
+        openTicketDetailButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                openTicketDetailModal(button);
+            });
+        });
+
+        closeTicketDetailButtons.forEach(function (button) {
+            button.addEventListener('click', closeTicketDetailModal);
+        });
+
+        ticketDetailModal.addEventListener('click', function (event) {
+            if (event.target === ticketDetailModal) {
+                closeTicketDetailModal();
+            }
+        });
+
         const ctx = document.getElementById('salesChart').getContext('2d');
         
         new Chart(ctx, {
