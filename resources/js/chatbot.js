@@ -9,7 +9,6 @@
         const badge = document.getElementById('chat-badge');
         const quickReplies = document.getElementById('quick-replies');
 
-        // Set greeting timestamp
         document.getElementById('first-msg-time').textContent = now();
 
         function now() {
