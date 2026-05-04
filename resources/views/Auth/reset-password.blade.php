@@ -1,12 +1,12 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ubah Password · Batu Kuda Wisata</title>
+@extends('layout.auth')
+
+@section('title', 'Ubah Password · Batu Kuda Wisata')
+
+@push('styles')
     @vite(['resources/css/auth.css', 'resources/js/auth.js'])
-</head>
-<body class="auth-body">
+@endpush
+
+@section('content')
 <div class="auth-layout">
     <div class="auth-visual">
         <div class="visual-bg"></div>
@@ -137,5 +137,4 @@
         </div>
     </div>
 </div>
-</body>
-</html>
+@endsection
