@@ -2,6 +2,15 @@
 
 @section('title', 'Batu Kuda | Wisata Alam Kabupaten Bandung')
 
+@push('styles')
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    >
+@endpush
+
 @section('content')
 
 <section class="hero">
@@ -301,24 +310,37 @@
     </div>
 </section>
 
+@php
+    $mapUserAddress = Auth::check() ? (Auth::user()->Address ?? '') : '';
+@endphp
+
 <section class="map-section" id="lokasi">
     <div class="container">
         <div class="fade-up" style="text-align:center;">
             <div class="section-tag" style="justify-content:center;">Peta Lokasi</div>
-            <h2 class="section-title">Temukan Batu Kuda</h2>
+            <h2 class="section-title">{{ Auth::check() ? 'Jalur Menuju Batu Kuda' : 'Temukan Batu Kuda' }}</h2>
             <p style="color: rgba(255,255,255,0.65); font-size: 1rem; max-width: 500px; margin: 0 auto;">
-                Desa Cikadut, Kecamatan Cimenyan, Kabupaten Bandung — ±25 km dari pusat Kota Bandung
+                @auth
+                    Jalur ditampilkan dari alamat akun Anda menuju Desa Cikadut, Kecamatan Cimenyan, Kabupaten Bandung.
+                @else
+                    Desa Cikadut, Kecamatan Cimenyan, Kabupaten Bandung — ±25 km dari pusat Kota Bandung
+                @endauth
             </p>
         </div>
 
         <div class="map-wrap fade-up">
-            <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.3!2d107.7178!3d-6.8567!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e68e9004f63cd27%3A0x1cfe7ac85e83d8b4!2sBatu%20Kuda!5e0!3m2!1sid!2sid!4v1680000000000"
-                allowfullscreen=""
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-                title="Peta Lokasi Batu Kuda Bandung"
-            ></iframe>
+            <div
+                id="batuKudaMap"
+                class="leaflet-map"
+                data-is-authenticated="{{ Auth::check() ? 'true' : 'false' }}"
+                data-user-address="{{ $mapUserAddress }}"
+                data-destination-name="Wisata Batu Kuda"
+                data-destination-lat="-6.8567"
+                data-destination-lng="107.7178"
+            ></div>
+            <div class="map-route-status" id="mapRouteStatus">
+                {{ Auth::check() ? 'Memuat jalur dari lokasi akun...' : 'Menampilkan lokasi Batu Kuda.' }}
+            </div>
         </div>
     </div>
 </section>
@@ -335,3 +357,155 @@
 </section>
 
 @endsection
+
+@push('scripts')
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mapElement = document.getElementById('batuKudaMap');
+            const statusElement = document.getElementById('mapRouteStatus');
+
+            if (!mapElement || typeof window.L === 'undefined') {
+                return;
+            }
+
+            const destination = [
+                Number(mapElement.dataset.destinationLat),
+                Number(mapElement.dataset.destinationLng),
+            ];
+            const destinationName = mapElement.dataset.destinationName || 'Batu Kuda';
+            const isAuthenticated = mapElement.dataset.isAuthenticated === 'true';
+            const userAddress = (mapElement.dataset.userAddress || '').trim();
+            const map = L.map(mapElement, {
+                scrollWheelZoom: false,
+            }).setView(destination, 14);
+
+            const setStatus = (message) => {
+                if (statusElement) {
+                    statusElement.textContent = message;
+                }
+            };
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors',
+            }).addTo(map);
+
+            L.marker(destination)
+                .addTo(map)
+                .bindPopup(`<strong>${destinationName}</strong><br>Desa Cikadut, Cimenyan`)
+                .openPopup();
+
+            const geocodeAddress = async (address) => {
+                const params = new URLSearchParams({
+                    format: 'jsonv2',
+                    limit: '1',
+                    q: address,
+                    countrycodes: 'id',
+                });
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Alamat tidak bisa diproses.');
+                }
+
+                const results = await response.json();
+
+                if (!Array.isArray(results) || results.length === 0) {
+                    throw new Error('Alamat akun tidak ditemukan di peta.');
+                }
+
+                return [Number(results[0].lat), Number(results[0].lon)];
+            };
+
+            const drawRoute = async (origin) => {
+                const routeUrl = [
+                    'https://router.project-osrm.org/route/v1/driving',
+                    `${origin[1]},${origin[0]};${destination[1]},${destination[0]}`,
+                ].join('/');
+                const params = new URLSearchParams({
+                    overview: 'full',
+                    geometries: 'geojson',
+                });
+                const response = await fetch(`${routeUrl}?${params.toString()}`);
+
+                if (!response.ok) {
+                    throw new Error('Rute jalan tidak tersedia.');
+                }
+
+                const data = await response.json();
+                const coordinates = data.routes?.[0]?.geometry?.coordinates;
+
+                if (!Array.isArray(coordinates) || coordinates.length === 0) {
+                    throw new Error('Data rute kosong.');
+                }
+
+                const routeLine = coordinates.map(([lng, lat]) => [lat, lng]);
+
+                return L.polyline(routeLine, {
+                    color: '#e8c97a',
+                    weight: 5,
+                    opacity: 0.95,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                }).addTo(map);
+            };
+
+            const drawFallbackLine = (origin) => L.polyline([origin, destination], {
+                color: '#e8c97a',
+                weight: 4,
+                opacity: 0.85,
+                dashArray: '10 8',
+            }).addTo(map);
+
+            const initUserRoute = async () => {
+                if (!isAuthenticated) {
+                    setStatus('Menampilkan lokasi Batu Kuda.');
+                    return;
+                }
+
+                if (!userAddress) {
+                    setStatus('Alamat akun belum tersedia. Lengkapi alamat untuk menampilkan jalur dari lokasi Anda.');
+                    return;
+                }
+
+                try {
+                    setStatus('Mencari lokasi akun Anda...');
+                    const origin = await geocodeAddress(userAddress);
+
+                    L.marker(origin)
+                        .addTo(map)
+                        .bindPopup('<strong>Lokasi Anda</strong><br>Berdasarkan alamat akun');
+
+                    let routeLayer;
+
+                    try {
+                        setStatus('Membuat jalur menuju Batu Kuda...');
+                        routeLayer = await drawRoute(origin);
+                        setStatus('Jalur dari lokasi akun menuju Batu Kuda berhasil ditampilkan.');
+                    } catch (error) {
+                        routeLayer = drawFallbackLine(origin);
+                        setStatus('Rute jalan belum tersedia, jadi ditampilkan garis arah dari lokasi akun ke Batu Kuda.');
+                    }
+
+                    map.fitBounds(routeLayer.getBounds(), {
+                        padding: [36, 36],
+                    });
+                } catch (error) {
+                    setStatus(error.message || 'Lokasi akun belum bisa ditemukan. Menampilkan lokasi Batu Kuda saja.');
+                    map.setView(destination, 14);
+                }
+            };
+
+            initUserRoute();
+        });
+    </script>
+@endpush
