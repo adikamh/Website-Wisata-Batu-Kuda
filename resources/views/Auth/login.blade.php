@@ -1,14 +1,12 @@
-<!DOCTYPE html>
-<html lang="id">
+@extends('layout.auth')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Masuk · Batu Kuda Wisata</title>
+@section('title', 'Masuk · Batu Kuda Wisata')
+
+@push('styles')
     @vite(['resources/css/auth.css', 'resources/js/auth.js'])
-</head>
+@endpush
 
-<body class="auth-body">
+@section('content')
 
     <div class="auth-layout">
         <div class="auth-visual">
@@ -211,7 +209,4 @@
         });
     </script>
     @endif
-
-</body>
-
-</html>
+@endsection

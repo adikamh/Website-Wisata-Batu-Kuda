@@ -4,9 +4,13 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ChatbotController;
 
 Route::get('/', [WisataController::class, 'dashboard'])->name('home');
-Route::get('/tiket', [WisataController::class, 'tiket'])->name('tiket');
+Route::middleware('auth')->group(function () {
+    Route::get('/tiket', [WisataController::class, 'tiket'])->name('tiket');
+    Route::post('/tiket', [WisataController::class, 'storeTiket'])->name('tiket.store');
+});
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -23,7 +27,7 @@ Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->nam
 Route::post('/reset-password', [AuthController::class, 'updatePassword'])->name('password.update');
 
 Route::middleware('auth')->get('dashboard', function () {
-    return view('dashboard');
+    return redirect()->route('home');
 })->name('dashboard');
 
 Route::middleware(['auth'])->get('admin/dashboard', function () {
@@ -33,3 +37,4 @@ Route::middleware(['auth'])->get('admin/dashboard', function () {
 
     return view()->file(resource_path('views/Admin/admin.dashboard.blade.php'));
 })->name('admin.dashboard');
+Route::post('/chat', ChatbotController::class);
