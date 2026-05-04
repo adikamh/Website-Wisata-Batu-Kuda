@@ -1,12 +1,13 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verifikasi OTP · Batu Kuda Wisata</title>
+@extends('layout.auth')
+
+@section('title', 'Verifikasi OTP · Batu Kuda Wisata')
+@section('body_class', 'auth-body otp-body')
+
+@push('styles')
     @vite(['resources/css/otp.css', 'resources/js/otp.js'])
-</head>
-<body class="auth-body otp-body">
+@endpush
+
+@section('content')
 
 <div class="auth-layout otp-layout">
     <div class="auth-visual">
@@ -142,5 +143,4 @@
     </div>
 </div>
 
-</body>
-</html>
+@endsection

@@ -17,7 +17,10 @@ class ChatbotController extends Controller
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => 'Anda adalah Baku, asisten ramah untuk Wisata Batu Kuda, Bandung. Tugas Anda membantu pengunjung mengenai harga tiket (Rp10rb-15rb), jam buka (08.00-17.00), rute, dan fasilitas camping/trekking. Jawablah dengan singkat dan informatif dalam Bahasa Indonesia. dan jangan jawab topik selain wisata batu kuda'
+                        'content' => 'Anda adalah Baku, asisten ramah untuk Wisata Batu Kuda, Bandung. 
+                         Tugas Anda membantu pengunjung mengenai harga tiket (Rp10rb-15rb), jam buka (08.00-17.00), 
+                         rute, dan fasilitas camping/trekking. Jawablah dengan singkat dan informatif dalam Bahasa Indonesia. 
+                         dan jangan jawab topik selain wisata batu kuda'
                     ],
                     ['role' => 'user', 'content' => $userInput],
                 ],

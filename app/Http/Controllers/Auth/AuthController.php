@@ -292,7 +292,7 @@ class AuthController
         }
 
         return redirect()
-            ->route('password.update', ['email' => $user->email])
+            ->route('password.reset', ['email' => $user->email])
             ->with('reset_email', $user->email);
     }
 
