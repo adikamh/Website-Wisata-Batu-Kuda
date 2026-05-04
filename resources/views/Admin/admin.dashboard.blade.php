@@ -23,12 +23,12 @@
             <!-- Menu Utama heading -->
             <div class="text-xs uppercase text-gray-500 tracking-wider font-semibold px-3 mb-2">Menu Utama</div>
             
-            <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-gray-700 bg-opacity-50 text-white transition-smooth hover:bg-gray-700">
+            <a href="#kelola-user" data-admin-menu="kelola-user" class="admin-menu-link flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-gray-700 bg-opacity-50 text-white transition-smooth hover:bg-gray-700">
                 <i class="fas fa-users w-5"></i>
                 <span>Kelola user</span>
             </a>
             
-            <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-300 transition-smooth hover:bg-gray-700 hover:text-white">
+            <a href="#tiket" data-admin-menu="tiket" class="admin-menu-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-300 transition-smooth hover:bg-gray-700 hover:text-white">
                 <i class="fas fa-boxes w-5"></i>
                 <span>Tiket</span>
             </a>
@@ -69,6 +69,7 @@
 
         <!-- Dashboard Content -->
         <div class="p-6 md:p-8">
+            <div id="kelola-user" data-admin-section="kelola-user">
             
             <!-- Stat Cards Row -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -187,7 +188,7 @@
                 <div class="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
                     <h2 class="text-lg font-bold text-gray-700"><i class="fas fa-table-list mr-2 text-indigo-500"></i> Data Pengguna Terbaru</h2>
                     <button class="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition">
-                        <i class="fas fa-plus mr-1"></i> Tambah Pengguna
+                        <i class="fas fa-plus mr-1"></i> Tambah Admin
                     </button>
                 </div>
                 <div class="overflow-x-auto">
@@ -263,9 +264,118 @@
     </main>
 </div>
 
+<!-- Modal Detail Tiket -->
+<div id="ticketDetailModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50 px-4">
+    <div class="w-full max-w-lg rounded-xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b px-6 py-4">
+            <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-receipt mr-2 text-indigo-500"></i> Detail Tiket</h3>
+            <button type="button" data-ticket-detail-close class="text-gray-400 hover:text-gray-700">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6">
+            <div class="rounded-lg bg-gray-50 p-4">
+                <span class="block text-xs text-gray-400 uppercase">Jumlah Tiket</span>
+                <span id="modalJumlahTiket" class="font-semibold text-gray-800">2</span>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4">
+                <span class="block text-xs text-gray-400 uppercase">Tanggal Masuk</span>
+                <span id="modalTanggalMasuk" class="font-semibold text-gray-800">12/05/2026</span>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4">
+                <span class="block text-xs text-gray-400 uppercase">Tanggal Keluar</span>
+                <span id="modalTanggalKeluar" class="font-semibold text-gray-800">13/05/2026</span>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4">
+                <span class="block text-xs text-gray-400 uppercase">Nama</span>
+                <span id="modalNama" class="font-semibold text-gray-800">Andi Wijaya</span>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4 sm:col-span-2">
+                <span class="block text-xs text-gray-400 uppercase">Paket</span>
+                <span id="modalPaket" class="font-semibold text-gray-800">Camping</span>
+            </div>
+        </div>
+        <div class="flex justify-end border-t bg-gray-50 px-6 py-4">
+            <button type="button" data-ticket-detail-close class="px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-900 transition">
+                Tutup
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- CHART INIT SCRIPT -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const menuLinks = document.querySelectorAll('[data-admin-menu]');
+        const sections = document.querySelectorAll('[data-admin-section]');
+
+        function showSection(sectionName) {
+            sections.forEach(function (section) {
+                section.classList.toggle('hidden', section.dataset.adminSection !== sectionName);
+            });
+
+            menuLinks.forEach(function (link) {
+                const isActive = link.dataset.adminMenu === sectionName;
+                link.classList.toggle('bg-gray-700', isActive);
+                link.classList.toggle('bg-opacity-50', isActive);
+                link.classList.toggle('text-white', isActive);
+                link.classList.toggle('text-gray-300', !isActive);
+            });
+        }
+
+        menuLinks.forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                const sectionName = link.dataset.adminMenu;
+                showSection(sectionName);
+                history.replaceState(null, '', '#' + sectionName);
+            });
+        });
+
+        if (window.location.hash === '#tiket') {
+            showSection('tiket');
+        }
+
+        const ticketDetailModal = document.getElementById('ticketDetailModal');
+        const openTicketDetailButtons = document.querySelectorAll('[data-ticket-detail-open]');
+        const closeTicketDetailButtons = document.querySelectorAll('[data-ticket-detail-close]');
+        const modalJumlahTiket = document.getElementById('modalJumlahTiket');
+        const modalTanggalMasuk = document.getElementById('modalTanggalMasuk');
+        const modalTanggalKeluar = document.getElementById('modalTanggalKeluar');
+        const modalNama = document.getElementById('modalNama');
+        const modalPaket = document.getElementById('modalPaket');
+
+        function openTicketDetailModal(button) {
+            modalJumlahTiket.textContent = button.dataset.jumlah;
+            modalTanggalMasuk.textContent = button.dataset.masuk;
+            modalTanggalKeluar.textContent = button.dataset.keluar;
+            modalNama.textContent = button.dataset.nama;
+            modalPaket.textContent = button.dataset.paket;
+            ticketDetailModal.classList.remove('hidden');
+            ticketDetailModal.classList.add('flex');
+        }
+
+        function closeTicketDetailModal() {
+            ticketDetailModal.classList.add('hidden');
+            ticketDetailModal.classList.remove('flex');
+        }
+
+        openTicketDetailButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                openTicketDetailModal(button);
+            });
+        });
+
+        closeTicketDetailButtons.forEach(function (button) {
+            button.addEventListener('click', closeTicketDetailModal);
+        });
+
+        ticketDetailModal.addEventListener('click', function (event) {
+            if (event.target === ticketDetailModal) {
+                closeTicketDetailModal();
+            }
+        });
+
         const ctx = document.getElementById('salesChart').getContext('2d');
         
         new Chart(ctx, {
@@ -274,7 +384,7 @@
                 labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
                 datasets: [
                     {
-                        label: 'Penjualan (USD)',
+                        label: 'Penjualan (Rupaiah)',
                         data: [1250, 1420, 1380, 1650, 1820, 2100, 1950],
                         borderColor: '#4f46e5',
                         backgroundColor: 'rgba(79, 70, 229, 0.05)',
@@ -313,4 +423,5 @@
         });
     });
 </script>
-@endsection
+</body>
+</html>
