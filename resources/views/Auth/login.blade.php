@@ -1,14 +1,12 @@
-<!DOCTYPE html>
-<html lang="id">
+@extends('layout.auth')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Masuk · Batu Kuda Wisata</title>
+@section('title', 'Masuk · Batu Kuda Wisata')
+
+@push('styles')
     @vite(['resources/css/auth.css', 'resources/js/auth.js'])
-</head>
+@endpush
 
-<body class="auth-body">
+@section('content')
 
     <div class="auth-layout">
         <div class="auth-visual">
@@ -211,31 +209,4 @@
         });
     </script>
     @endif
-
-@if (session('success'))
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const alert = document.getElementById('successAlert');
-
-            if (!alert) {
-                return;
-            }
-
-            alert.style.transition = 'opacity 0.45s ease, transform 0.45s ease, margin 0.45s ease';
-
-            window.setTimeout(() => {
-                alert.style.opacity = '0';
-                alert.style.transform = 'translateY(-8px)';
-                alert.style.marginBottom = '0';
-
-                window.setTimeout(() => {
-                    alert.remove();
-                }, 450);
-            }, 5000);
-        });
-    </script>
-@endif
-
-</body>
-
-</html>
+@endsection
