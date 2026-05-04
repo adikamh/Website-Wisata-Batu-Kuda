@@ -51,7 +51,7 @@ class WisataController
                 ->with('status', 'Silakan login terlebih dahulu untuk mengakses tiket.');
         }
 
-        return view('tiket', [
+        return view('layout.tiket', [
             'ticketPackages' => $this->getTicketPackages(),
             'paymentOptions' => $this->getPaymentOptions(),
             'recentTicket' => session('ticket_booking'),
@@ -248,5 +248,4 @@ class WisataController
         ];
     }
 }
-
 
