@@ -3,6 +3,10 @@
 @section('title', 'Tiket | Batu Kuda')
 @section('meta_description', 'Pemesanan tiket Batu Kuda untuk kunjungan biasa dan camping.')
 
+@push('styles')
+    @vite(['resources/css/tiket.css'])
+@endpush
+
 @section('content')
     @php
         $selectedPackageKey = array_key_exists(old('package_type', 'visit'), $ticketPackages)
@@ -257,3 +261,7 @@
         </section>
     </div>
 @endsection
+
+@push('scripts')
+    @vite(['resources/js/tiket.js'])
+@endpush
