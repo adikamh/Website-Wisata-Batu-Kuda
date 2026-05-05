@@ -1,6 +1,6 @@
 @extends('layout.auth')
 
-@section('title', 'Verifikasi OTP · Batu Kuda Wisata')
+@section('title', 'Verifikasi OTP Reset · Batu Kuda Wisata')
 @section('body_class', 'auth-body otp-body')
 
 @push('styles')
@@ -56,8 +56,8 @@
                         <path d="M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"></path>
                     </svg>
                 </div>
-                <h1>Verifikasi OTP</h1>
-                <p>Masukkan email dan kode OTP 6 digit yang kami kirimkan.</p>
+                <h1>Verifikasi OTP Reset</h1>
+                <p>Masukkan kode OTP 6 digit yang kami kirimkan ke email Anda untuk melanjutkan reset password</p>
             </div>
 
             @if ($errors->any())
@@ -78,7 +78,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('verify.otp.submit') }}" class="auth-form" id="otpForm">
+            <form method="POST" action="{{ route('reset.otp.submit') }}" class="auth-form" id="otpResetForm">
                 @csrf
 
                 <div class="form-group">
@@ -90,7 +90,7 @@
                                 <polyline points="22,6 12,13 2,6"/>
                             </svg>
                         </span>
-                        <input type="email" id="email" name="email" value="{{ $email }}" readonly autocomplete="email">
+                        <input type="email" id="email" name="email" value="{{ $email ?? old('email') }}" readonly autocomplete="email">
                     </div>
                 </div>
 
@@ -108,8 +108,8 @@
                     <p class="field-caption">OTP berlaku selama 5 menit sejak dikirim.</p>
                 </div>
 
-                <button type="submit" class="btn-submit" id="otpSubmitBtn">
-                    <span class="btn-text">Verifikasi Sekarang</span>
+                <button type="submit" class="btn-submit" id="otpResetSubmitBtn">
+                    <span class="btn-text">Verifikasi & Lanjut Reset Password</span>
                     <span class="btn-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
                     </span>
@@ -120,22 +120,22 @@
             </form>
 
             <div class="otp-actions">
-                <form method="POST" action="{{ route('verify.otp.resend') }}" id="resendOtpForm">
+                <form method="POST" action="{{ route('password.email') }}" id="resendResetOtpForm">
                     @csrf
-                    <input type="hidden" name="email" value="{{ $email }}">
+                    <input type="hidden" name="email" value="{{ $email ?? old('email') }}">
                     <button
                         type="submit"
                         class="link-button"
-                        id="resendOtpButton"
+                        id="resendResetOtpButton"
                         data-countdown="60"
                         data-resent-at="{{ session('otp_resent_at', now()->timestamp) }}"
                     >
                         Kirim ulang OTP
                     </button>
                 </form>
-                <p class="resend-hint" id="resendHint">Kirim ulang tersedia dalam <span id="countdownValue">60</span> detik</p>
+                <p class="resend-hint" id="resendResetHint">Kirim ulang tersedia dalam <span id="countdownResetValue">60</span> detik</p>
                 <p class="auth-switch">
-                    Sudah terverifikasi?
+                    Ingat password?
                     <a href="{{ route('login') }}">Masuk ke akun</a>
                 </p>
             </div>

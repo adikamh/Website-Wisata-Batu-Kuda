@@ -12,6 +12,8 @@ use Illuminate\Validation\Rules\Password;
 
 class AuthController
 {
+    use ForgotPasswordTrait;
+
     public function showLogin()
     {
         return view('Auth.login');
@@ -140,10 +142,10 @@ class AuthController
             'email_verified_at' => now(),
         ])->save();
 
-        return redirect()
-            ->route('login')
-            ->with('success', 'Verifikasi berhasil, silakan login ke akun Anda.')
-            ->with('verification_email', $user->email);
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route('admin.dashboard');
     }
 
     public function resendOtp(Request $request)
@@ -210,5 +212,159 @@ class AuthController
         return $user->role === 'admin'
             ? redirect()->route('admin.dashboard')
             : redirect()->route('home');
+    }
+
+    public function showForgotPassword()
+    {
+        return view('Auth.forgot-password');
+    }
+
+    public function sendResetOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+        ]);
+
+        $user = User::where('email', $validated['email'])->first();
+
+        if (! $user) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['email' => 'Email tidak ditemukan.']);
+        }
+
+        $this->issueResetOtp($user);
+
+        return redirect()
+            ->route('reset.otp', ['email' => $user->email])
+            ->with('status', 'OTP reset password sudah dikirim ke email Anda.')
+            ->with('reset_email', $user->email)
+            ->with('otp_resent_at', now()->timestamp);
+    }
+
+    public function showResetOtp(Request $request)
+    {
+        $email = $request->query('email') ?? session('reset_email');
+
+        return view('Auth.reset-otp', [
+            'email' => $email,
+            'resendAvailableAt' => now()->addSeconds(60)->timestamp,
+        ]);
+    }
+
+    public function showResetPassword(Request $request)
+    {
+        $email = $request->query('email') ?? session('reset_email');
+
+        return view('Auth.reset-password', [
+            'email' => $email,
+        ]);
+    }
+
+    public function verifyResetOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'otp' => ['required', 'digits:6'],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'otp.required' => 'Kode OTP wajib diisi.',
+            'otp.digits' => 'OTP harus 6 digit.',
+        ]);
+
+        $user = User::where('email', $validated['email'])
+            ->where('otp', $validated['otp'])
+            ->first();
+
+        if (! $user) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['otp' => 'Kode OTP tidak valid.']);
+        }
+
+        if (! $user->otp_expired_at || $user->otp_expired_at->isPast()) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['otp' => 'OTP sudah kedaluwarsa. Silakan minta OTP baru.']);
+        }
+
+        return redirect()
+            ->route('password.reset', ['email' => $user->email])
+            ->with('reset_email', $user->email);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'password.required' => 'Password baru wajib diisi.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'password.min' => 'Password minimal 8 karakter.',
+        ]);
+
+        $user = User::where('email', $validated['email'])->first();
+
+        if (! $user) {
+            return back()
+                ->withErrors(['email' => 'Email tidak ditemukan.']);
+        }
+
+        $user->forceFill([
+            'otp' => null,
+            'otp_expired_at' => null,
+            'password' => Hash::make($validated['password']),
+        ])->save();
+
+        return redirect()
+            ->route('login')
+            ->with('success', 'Password berhasil diubah. Silakan login dengan password baru.');
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'otp' => ['required', 'digits:6'],
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'otp.required' => 'Kode OTP wajib diisi.',
+            'otp.digits' => 'OTP harus 6 digit.',
+            'password.required' => 'Password baru wajib diisi.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'password.min' => 'Password minimal 8 karakter.',
+        ]);
+
+        $user = User::where('email', $validated['email'])
+            ->where('otp', $validated['otp'])
+            ->first();
+
+        if (! $user) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['otp' => 'Kode OTP tidak valid.']);
+        }
+
+        if (! $user->otp_expired_at || $user->otp_expired_at->isPast()) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['otp' => 'OTP sudah kedaluwarsa. Silakan minta OTP baru.']);
+        }
+
+        $user->forceFill([
+            'otp' => null,
+            'otp_expired_at' => null,
+            'password' => Hash::make($validated['password']),
+        ])->save();
+
+        return redirect()
+            ->route('login')
+            ->with('success', 'Password berhasil diubah. Silakan login dengan password baru.');
     }
 }

@@ -21,16 +21,28 @@ class AdminUserSeeder extends Seeder
             'Address' => 'Jl. Contoh No. 123, Kota Bandung',
             'is_verified' => true,
         ]);
-        
-        // User biasa (contoh)
+
+        // User Joko Widodo
+        User::create([
+            'name' => 'Joko Widodo',
+            'username' => 'joko',
+            'email' => 'joko@example.com',
+            'password' => Hash::make('password123'),
+            'role' => 'user',
+            'Phone' => '081234567893',
+            'Address' => 'Jl. Diponegoro No. 20',
+            'is_verified' => false, // belum verifikasi
+        ]);
+
+        // User Biasa (contoh lain)
         User::create([
             'name' => 'User Biasa',
             'username' => 'user',
             'email' => 'user@example.com',
             'password' => Hash::make('password123'),
+            'role' => 'user',
             'Phone' => '081234567890',
             'Address' => 'Jl. Contoh No. 123, Kota Wisata',
-            'role' => 'user',
             'is_verified' => true,
         ]);
     }

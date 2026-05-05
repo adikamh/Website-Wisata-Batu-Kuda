@@ -21,13 +21,25 @@
     <div class="nav-shell" id="navLinks">
         <ul class="nav-links">
             <li><a href="{{ $anchor('tentang') }}" data-nav-link data-section="tentang" class="{{ $isHome ? 'is-home-link' : '' }}">Tentang</a></li>
-            <li><a href="{{ $anchor('galeri') }}" data-nav-link data-section="galeri" class="{{ $isHome ? 'is-home-link' : '' }}">Galeri</a></li>
+            <li><a href="{{ route('gallery.index') }}" data-nav-link class="{{ request()->routeIs('gallery.*') ? 'is-active' : '' }}">Galeri</a></li>
             <li><a href="{{ $anchor('info') }}" data-nav-link data-section="info" class="{{ $isHome ? 'is-home-link' : '' }}">Info Wisata</a></li>
             <li><a href="{{ route('tiket') }}" data-nav-link class="{{ request()->routeIs('tiket') ? 'is-active' : '' }}">Tiket</a></li>
             <li><a href="{{ $anchor('lokasi') }}" data-nav-link data-section="lokasi" class="{{ $isHome ? 'is-home-link' : '' }}">Lokasi</a></li>
         </ul>
 
         @if(Auth::check())
+            @if(Auth::user()->isAdmin())
+                <a href="{{ route('admin.dashboard') }}" class="btn-login btn-admin-dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    Dashboard Admin
+                </a>
+            @endif
+
             <div class="nav-user dropdown">
                 <button type="button" class="btn-login btn-user" id="userDropdownButton" aria-expanded="false" aria-controls="userDropdown">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">

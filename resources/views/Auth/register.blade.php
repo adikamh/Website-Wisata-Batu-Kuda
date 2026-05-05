@@ -1,12 +1,18 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar · Batu Kuda Wisata</title>
+@extends('layout.auth')
+
+@section('title', 'Daftar · Batu Kuda Wisata')
+
+@push('styles')
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    >
     @vite(['resources/css/auth.css', 'resources/js/auth.js'])
-</head>
-<body class="auth-body">
+@endpush
+
+@section('content')
 
 <div class="auth-layout register-layout">
 
@@ -96,13 +102,20 @@
 
                     {{-- Alamat --}}
                     <div class="form-group">
-                        <label for="address">Alamat <span class="label-opt">(opsional)</span></label>
-                        <div class="input-wrap">
-                            <span class="input-icon">
+                        <label for="address">Alamat / Detail Lokasi <span class="label-opt">(opsional)</span></label>
+                        <div class="input-wrap input-wrap--action">
+                            <span class="input-icon input-icon--static">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                             </span>
-                            <input type="text" id="address" name="Address" placeholder="Kota / Kabupaten" value="{{ old('Address') }}" autocomplete="address-level2">
+                            <input type="text" id="address" name="Address" placeholder="    Contoh: Cimenyan, Kabupaten Bandung" value="{{ old('Address') }}" autocomplete="address-level2">
+                            <button type="button" class="location-field-btn" id="openLocationModal" aria-label="Pilih lokasi">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                            </button>
                         </div>
+                        <p class="location-inline-help" id="locationHelp">Gunakan ikon lokasi untuk isi alamat otomatis.</p>
                     </div>
                 </div>
 
@@ -227,5 +240,46 @@
 
 </div>
 
-</body>
-</html>
+<div class="location-modal" id="locationModal" hidden>
+    <div class="location-modal__backdrop" data-close-location-modal></div>
+    <div class="location-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="locationModalTitle">
+        <div class="location-modal__header">
+            <div>
+                <p class="location-modal__eyebrow">Lokasi Register</p>
+                <h2 id="locationModalTitle">Pilih lokasi Anda</h2>
+            </div>
+            <button type="button" class="location-modal__close" data-close-location-modal aria-label="Tutup modal lokasi">
+                ×
+            </button>
+        </div>
+
+        <p class="location-modal__description">
+            Izinkan akses lokasi perangkat agar website bisa meminta lokasi Anda dan mengisi alamat otomatis. Anda juga tetap bisa klik titik di peta untuk memilih manual.
+        </p>
+
+        <p class="location-help location-help--modal" id="locationModalHelp">
+            Menunggu izin lokasi atau pilihan titik di peta.
+        </p>
+
+        <div id="locationMap" class="location-map"></div>
+
+        <div class="location-modal__actions">
+            <button type="button" class="location-btn location-btn--muted" data-close-location-modal>
+                Tutup
+            </button>
+            <button type="button" class="location-btn" id="confirmLocationSelection">
+                Gunakan Lokasi Ini
+            </button>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@push('scripts')
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+@endpush

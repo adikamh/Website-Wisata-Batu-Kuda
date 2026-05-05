@@ -1,13 +1,26 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ChatbotController;
 
 Route::get('/', [WisataController::class, 'dashboard'])->name('home');
-Route::get('/tiket', [WisataController::class, 'tiket'])->name('tiket');
-Route::post('/tiket', [WisataController::class, 'storeTiket'])->name('tiket.store');
+Route::middleware('auth')->group(function () {
+    Route::get('/tiket', [WisataController::class, 'tiket'])->name('tiket');
+    Route::post('/tiket', [WisataController::class, 'storeTiket'])->name('tiket.store');
+
+    Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
+    Route::post('/gallery', [GalleryController::class, 'store'])->name('gallery.store');
+    Route::get('/gallery/{gallery}', [GalleryController::class, 'show'])->name('gallery.show');
+    Route::delete('/gallery/{gallery}', [GalleryController::class, 'destroy'])->name('gallery.destroy');
+    Route::post('/gallery/{gallery}/like', [GalleryController::class, 'like'])->name('gallery.like');
+    Route::get('/gallery/{gallery}/komentar', [GalleryController::class, 'getKomentar'])->name('gallery.komentar');
+    Route::post('/gallery/{gallery}/komentar', [GalleryController::class, 'storeKomentar'])->name('gallery.komentar.store');
+    Route::delete('/gallery/komentar/{komentar}', [GalleryController::class, 'destroyKomentar'])->name('gallery.komentar.destroy');
+});
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -16,12 +29,15 @@ Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('verif
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('verify.otp.submit');
 Route::post('/verify-otp/resend', [AuthController::class, 'resendOtp'])->name('verify.otp.resend');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-Route::get('/forgot-password', function () {
-    return view('Auth.forgot-password');
-})->name('password.request');
+Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+Route::post('/forgot-password', [AuthController::class, 'sendResetOtp'])->name('password.email');
+Route::get('/reset-otp', [AuthController::class, 'showResetOtp'])->name('reset.otp');
+Route::post('/reset-otp', [AuthController::class, 'verifyResetOtp'])->name('reset.otp.submit');
+Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('password.reset');
+Route::post('/reset-password', [AuthController::class, 'updatePassword'])->name('password.update');
 
 Route::middleware('auth')->get('dashboard', function () {
-    return view('dashboard');
+    return redirect()->route('home');
 })->name('dashboard');
 
 Route::middleware(['auth'])->get('admin/dashboard', function () {
@@ -31,3 +47,4 @@ Route::middleware(['auth'])->get('admin/dashboard', function () {
 
     return view()->file(resource_path('views/Admin/admin.dashboard.blade.php'));
 })->name('admin.dashboard');
+Route::post('/chat', ChatbotController::class);
