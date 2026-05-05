@@ -196,7 +196,7 @@
                 <div class="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
                     <h2 class="text-lg font-bold text-gray-700"><i class="fas fa-table-list mr-2 text-indigo-500"></i> Data Pengguna Terbaru</h2>
                     <button class="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition">
-                        <i class="fas fa-plus mr-1"></i> Tambah Admin
+                        <i class="fas fa-plus mr-1"></i> Tambah Pengguna
                     </button>
                 </div>
                 <div class="overflow-x-auto">
@@ -265,6 +265,118 @@
                         <button class="px-3 py-1 border rounded-md text-sm bg-indigo-600 text-white">1</button>
                         <button class="px-3 py-1 border rounded-md text-sm bg-white hover:bg-gray-100">2</button>
                         <button class="px-3 py-1 border rounded-md text-sm bg-white hover:bg-gray-100">Next</button>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <!-- Menu Tiket -->
+            <div id="tiket" data-admin-section="tiket" class="bg-white rounded-xl shadow-sm overflow-hidden hidden">
+                <div class="px-6 py-4 border-b bg-gray-50">
+                    <h2 class="text-lg font-bold text-gray-700"><i class="fas fa-ticket-alt mr-2 text-indigo-500"></i> Tiket</h2>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    <div class="border rounded-xl p-5">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                            <h3 class="text-base font-bold text-gray-700">Tiket untuk CRUD</h3>
+                            <button type="button" class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">
+                                <i class="fas fa-plus mr-2"></i> Tambah Tiket
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Tiket</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                    <tr>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Tiket Masuk</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Rp 15.000</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm">
+                                            <button type="button" class="text-indigo-600 hover:text-indigo-900 mr-3"><i class="fas fa-edit"></i></button>
+                                            <button type="button" class="text-red-600 hover:text-red-900"><i class="fas fa-trash-alt"></i></button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="border rounded-xl p-5">
+                        <h3 class="text-base font-bold text-gray-700 mb-4">Unduh Laporan</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="#" class="inline-flex items-center px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition">
+                                <i class="fas fa-file-pdf mr-2"></i> Daftar Pengunjung PDF
+                            </a>
+                            <a href="#" class="inline-flex items-center px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition">
+                                <i class="fas fa-file-excel mr-2"></i> Keuangan Excel
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="border rounded-xl overflow-hidden">
+                        <div class="px-5 py-4 border-b bg-gray-50">
+                            <h3 class="text-base font-bold text-gray-700">Tiket yang Sudah Dibeli</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resi</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detail</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                    <tr class="hover:bg-gray-50 transition align-top">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">12/05/2026</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000123</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">andiwijaya</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <button type="button" data-ticket-detail-open data-jumlah="2" data-masuk="12/05/2026" data-keluar="13/05/2026" data-nama="Andi Wijaya" data-paket="Camping" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
+                                                <i class="fas fa-eye mr-1"></i> Detail
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 transition align-top">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">14/05/2026</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000124</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">sitinur</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <button type="button" data-ticket-detail-open data-jumlah="4" data-masuk="14/05/2026" data-keluar="14/05/2026" data-nama="Siti Nurhaliza" data-paket="Tiket Masuk" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
+                                                <i class="fas fa-eye mr-1"></i> Detail
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 transition align-top">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">15/05/2026</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000125</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">budisantoso</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <button type="button" data-ticket-detail-open data-jumlah="1" data-masuk="15/05/2026" data-keluar="16/05/2026" data-nama="Budi Santoso" data-paket="Camping" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
+                                                <i class="fas fa-eye mr-1"></i> Detail
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 transition align-top">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">17/05/2026</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000126</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">dewilestari</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <button type="button" data-ticket-detail-open data-jumlah="3" data-masuk="17/05/2026" data-keluar="18/05/2026" data-nama="Dewi Lestari" data-paket="Family Camp" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
+                                                <i class="fas fa-eye mr-1"></i> Detail
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -392,7 +504,7 @@
                 labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
                 datasets: [
                     {
-                        label: 'Penjualan (Rupaiah)',
+                        label: 'Penjualan (USD)',
                         data: [1250, 1420, 1380, 1650, 1820, 2100, 1950],
                         borderColor: '#4f46e5',
                         backgroundColor: 'rgba(79, 70, 229, 0.05)',
