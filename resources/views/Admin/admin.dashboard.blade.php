@@ -44,6 +44,14 @@
         <header class="bg-white shadow-sm sticky top-0 z-20 px-8 py-4 flex justify-between items-center border-b">
             <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
             <div class="flex items-center space-x-4">
+                <a href="{{ route('home') }}" class="inline-flex items-center space-x-2 px-3 py-2 rounded-lg bg-[#40916c] hover:bg-[#2d6a4f] text-white text-xs font-semibold transition-smooth">
+                    <i class="fas fa-house"></i>
+                    <span class="hidden lg:inline">Dashboard User</span>
+                </a>
+                <a href="{{ route('gallery.index') }}" class="inline-flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold transition-smooth">
+                    <i class="fas fa-images"></i>
+                    <span class="hidden lg:inline">Library Gallery</span>
+                </a>
                 <button class="text-gray-500 hover:text-gray-700 relative">
                     <i class="fas fa-bell text-xl"></i>
                     <span class="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] px-1 rounded-full">3</span>

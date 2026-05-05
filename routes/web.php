@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,15 @@ Route::get('/', [WisataController::class, 'dashboard'])->name('home');
 Route::middleware('auth')->group(function () {
     Route::get('/tiket', [WisataController::class, 'tiket'])->name('tiket');
     Route::post('/tiket', [WisataController::class, 'storeTiket'])->name('tiket.store');
+
+    Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
+    Route::post('/gallery', [GalleryController::class, 'store'])->name('gallery.store');
+    Route::get('/gallery/{gallery}', [GalleryController::class, 'show'])->name('gallery.show');
+    Route::delete('/gallery/{gallery}', [GalleryController::class, 'destroy'])->name('gallery.destroy');
+    Route::post('/gallery/{gallery}/like', [GalleryController::class, 'like'])->name('gallery.like');
+    Route::get('/gallery/{gallery}/komentar', [GalleryController::class, 'getKomentar'])->name('gallery.komentar');
+    Route::post('/gallery/{gallery}/komentar', [GalleryController::class, 'storeKomentar'])->name('gallery.komentar.store');
+    Route::delete('/gallery/komentar/{komentar}', [GalleryController::class, 'destroyKomentar'])->name('gallery.komentar.destroy');
 });
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');

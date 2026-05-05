@@ -43,7 +43,7 @@
             <h5>Navigasi</h5>
             <ul>
                 <li><a href="{{ $footerAnchor('tentang') }}">Tentang</a></li>
-                <li><a href="{{ $footerAnchor('galeri') }}">Galeri</a></li>
+                <li><a href="{{ route('gallery.index') }}">Galeri</a></li>
                 <li><a href="{{ $footerAnchor('info') }}">Info Wisata</a></li>
                 <li><a href="{{ route('tiket') }}">Tiket</a></li>
                 <li><a href="{{ $footerAnchor('lokasi') }}">Lokasi</a></li>
