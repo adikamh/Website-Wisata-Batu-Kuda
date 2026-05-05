@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ETicket;
+use App\Models\PaketWisata;
+use App\Models\Transaction;
+use App\Models\TransactionDetail;
 use App\Models\Wisata;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -159,3 +163,4 @@ class WisataController
         ];
     }
 }
+
