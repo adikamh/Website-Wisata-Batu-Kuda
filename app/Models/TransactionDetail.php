@@ -13,4 +13,19 @@ class TransactionDetail extends Model
         'subtotal', 'package_type', 'start_date', 'end_date', 'total_days',
         'extra_days', 'extra_days_charge', 'tax_amount', 'grand_total'
     ];
+
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+    ];
+
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class, 'transaction_id');
+    }
+
+    public function tiketKategori()
+    {
+        return $this->belongsTo(TiketKategori::class, 'tiket_kategori_id');
+    }
 }

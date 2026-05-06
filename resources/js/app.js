@@ -153,10 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
         obs.observe(counter);
     });
 
-    const packageRadios = document.querySelectorAll('input[name="package_type"]');
+    const packageRadios = document.querySelectorAll('input[name="ticket_category_id"]');
     const paymentCategoryRadios = document.querySelectorAll('input[name="payment_category"]');
     const paymentGroups = document.querySelectorAll('[data-payment-group]');
-    const campingField = document.querySelector('.ticket-field--camping');
     const visitDateInput = document.querySelector('input[name="visit_date"]');
     const campingEndDateInput = document.querySelector('input[name="camping_end_date"]');
     const visitorCountInput = document.querySelector('input[name="visitor_count"]');
@@ -164,14 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const formatRupiah = (value) => new Intl.NumberFormat('id-ID').format(value);
 
-    const syncCampingField = () => {
-        if (!campingField) {
-            return;
-        }
-
-        const selectedPackage = document.querySelector('input[name="package_type"]:checked')?.value ?? 'visit';
-        campingField.classList.toggle('is-hidden', selectedPackage !== 'camping');
-
+    const syncCheckoutDate = () => {
         if (visitDateInput && campingEndDateInput) {
             campingEndDateInput.min = visitDateInput.value || '';
 
@@ -195,9 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const calculateDays = () => {
-        const selectedPackage = document.querySelector('input[name="package_type"]:checked')?.value ?? 'visit';
-
-        if (selectedPackage !== 'camping' || !visitDateInput?.value || !campingEndDateInput?.value) {
+        if (!visitDateInput?.value || !campingEndDateInput?.value) {
             return 1;
         }
 
@@ -217,11 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const selectedPackage = document.querySelector('input[name="package_type"]:checked')?.value ?? 'visit';
+        const selectedPackage = document.querySelector('input[name="ticket_category_id"]:checked');
         const visitors = Math.max(1, Number.parseInt(visitorCountInput?.value ?? '1', 10) || 1);
         const days = calculateDays();
-        const packageName = summaryBox.dataset[`package${selectedPackage.charAt(0).toUpperCase()}${selectedPackage.slice(1)}Name`];
-        const packagePrice = Number.parseInt(summaryBox.dataset[`package${selectedPackage.charAt(0).toUpperCase()}${selectedPackage.slice(1)}Price`] ?? '0', 10);
+        const packageName = selectedPackage?.dataset.ticketName ?? '-';
+        const packagePrice = Number.parseInt(selectedPackage?.dataset.ticketPrice ?? '0', 10);
         const total = packagePrice * visitors * days;
 
         summaryBox.querySelector('[data-summary-package]').textContent = packageName;
@@ -233,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     packageRadios.forEach((radio) => {
         radio.addEventListener('change', () => {
-            syncCampingField();
+            syncCheckoutDate();
             syncSummary();
         });
     });
@@ -243,13 +233,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     visitDateInput?.addEventListener('change', () => {
-        syncCampingField();
+        syncCheckoutDate();
         syncSummary();
     });
     campingEndDateInput?.addEventListener('change', syncSummary);
     visitorCountInput?.addEventListener('input', syncSummary);
 
-    syncCampingField();
+    syncCheckoutDate();
     syncPaymentGroups();
     syncSummary();
 });
