@@ -77,6 +77,23 @@
 
         <!-- Dashboard Content -->
         <div class="p-6 md:p-8">
+            @if (session('status'))
+                <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+                    {{ session('status') }}
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    <p class="font-semibold">Periksa kembali input tiket.</p>
+                    <ul class="mt-1 list-disc pl-5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div id="kelola-user" data-admin-section="kelola-user">
             
             <!-- Stat Cards Row -->
@@ -279,45 +296,40 @@
                 <div class="p-6 space-y-6">
                     <div class="border rounded-xl p-5">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-                            <h3 class="text-base font-bold text-gray-700">Tiket untuk CRUD</h3>
-                            <button type="button" class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">
-                                <i class="fas fa-plus mr-2"></i> Tambah Tiket
-                            </button>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-700">Kelola Tiket</h3>
+                                <p class="text-sm text-gray-500">Tiket yang dibuat di sini akan tampil di halaman pemesanan user.</p>
+                            </div>
                         </div>
+
+                        @include('Admin.tickets.create')
+
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Tiket</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-100">
-                                    <tr>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Tiket Masuk</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Rp 15.000</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm">
-                                            <button type="button" class="text-indigo-600 hover:text-indigo-900 mr-3"><i class="fas fa-edit"></i></button>
-                                            <button type="button" class="text-red-600 hover:text-red-900"><i class="fas fa-trash-alt"></i></button>
-                                        </td>
-                                    </tr>
+                                    @forelse ($tickets as $ticket)
+                                        <tr class="align-top">
+                                            @include('Admin.tickets.edit', ['ticket' => $ticket])
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="px-4 py-6 text-center text-sm text-gray-500">Belum ada tiket. Tambahkan tiket pertama agar muncul di halaman pemesanan user.</td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <div class="border rounded-xl p-5">
-                        <h3 class="text-base font-bold text-gray-700 mb-4">Unduh Laporan</h3>
-                        <div class="flex flex-wrap gap-2">
-                            <a href="#" class="inline-flex items-center px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition">
-                                <i class="fas fa-file-pdf mr-2"></i> Daftar Pengunjung PDF
-                            </a>
-                            <a href="#" class="inline-flex items-center px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition">
-                                <i class="fas fa-file-excel mr-2"></i> Keuangan Excel
-                            </a>
-                        </div>
-                    </div>
+                    @include('Admin.tickets.reports')
 
                     <div class="border rounded-xl overflow-hidden">
                         <div class="px-5 py-4 border-b bg-gray-50">
@@ -334,46 +346,23 @@
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-100">
-                                    <tr class="hover:bg-gray-50 transition align-top">
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">12/05/2026</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000123</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">andiwijaya</td>
-                                        <td class="px-4 py-4 text-sm text-gray-700">
-                                            <button type="button" data-ticket-detail-open data-jumlah="2" data-masuk="12/05/2026" data-keluar="13/05/2026" data-nama="Andi Wijaya" data-paket="Camping" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
-                                                <i class="fas fa-eye mr-1"></i> Detail
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr class="hover:bg-gray-50 transition align-top">
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">14/05/2026</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000124</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">sitinur</td>
-                                        <td class="px-4 py-4 text-sm text-gray-700">
-                                            <button type="button" data-ticket-detail-open data-jumlah="4" data-masuk="14/05/2026" data-keluar="14/05/2026" data-nama="Siti Nurhaliza" data-paket="Tiket Masuk" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
-                                                <i class="fas fa-eye mr-1"></i> Detail
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr class="hover:bg-gray-50 transition align-top">
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">15/05/2026</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000125</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">budisantoso</td>
-                                        <td class="px-4 py-4 text-sm text-gray-700">
-                                            <button type="button" data-ticket-detail-open data-jumlah="1" data-masuk="15/05/2026" data-keluar="16/05/2026" data-nama="Budi Santoso" data-paket="Camping" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
-                                                <i class="fas fa-eye mr-1"></i> Detail
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr class="hover:bg-gray-50 transition align-top">
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">17/05/2026</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-000126</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">dewilestari</td>
-                                        <td class="px-4 py-4 text-sm text-gray-700">
-                                            <button type="button" data-ticket-detail-open data-jumlah="3" data-masuk="17/05/2026" data-keluar="18/05/2026" data-nama="Dewi Lestari" data-paket="Family Camp" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
-                                                <i class="fas fa-eye mr-1"></i> Detail
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    @forelse ($transactions as $transaction)
+                                        @php($detail = $transaction->details->first())
+                                        <tr class="hover:bg-gray-50 transition align-top">
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{{ $transaction->created_at->format('d/m/Y') }}</td>
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">INV-{{ str_pad($transaction->id, 6, '0', STR_PAD_LEFT) }}</td>
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{{ $transaction->user->name ?? '-' }}</td>
+                                            <td class="px-4 py-4 text-sm text-gray-700">
+                                                <button type="button" data-ticket-detail-open data-jumlah="{{ $detail->quantity ?? 0 }}" data-masuk="{{ optional($detail?->start_date)->format('d/m/Y') ?? ($detail->start_date ?? '-') }}" data-keluar="{{ optional($detail?->end_date)->format('d/m/Y') ?? ($detail->end_date ?? '-') }}" data-nama="{{ $transaction->user->name ?? '-' }}" data-paket="{{ $detail?->tiketKategori?->nama_kategori ?? '-' }}" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition">
+                                                    <i class="fas fa-eye mr-1"></i> Detail
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="px-4 py-6 text-center text-sm text-gray-500">Belum ada tiket yang dipesan user.</td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
@@ -455,6 +444,81 @@
         if (window.location.hash === '#tiket') {
             showSection('tiket');
         }
+
+        const ticketCreateModal = document.getElementById('ticketCreateModal');
+        const openTicketCreateButtons = document.querySelectorAll('[data-ticket-create-open]');
+        const closeTicketCreateButtons = document.querySelectorAll('[data-ticket-create-close]');
+
+        function openTicketCreateModal() {
+            ticketCreateModal.classList.remove('hidden');
+            ticketCreateModal.classList.add('flex');
+        }
+
+        function closeTicketCreateModal() {
+            ticketCreateModal.classList.add('hidden');
+            ticketCreateModal.classList.remove('flex');
+        }
+
+        openTicketCreateButtons.forEach(function (button) {
+            button.addEventListener('click', openTicketCreateModal);
+        });
+
+        closeTicketCreateButtons.forEach(function (button) {
+            button.addEventListener('click', closeTicketCreateModal);
+        });
+
+        ticketCreateModal?.addEventListener('click', function (event) {
+            if (event.target === ticketCreateModal) {
+                closeTicketCreateModal();
+            }
+        });
+
+        if (ticketCreateModal?.dataset.shouldOpen === 'true' && window.location.hash === '#tiket') {
+            openTicketCreateModal();
+        }
+
+        const openTicketEditButtons = document.querySelectorAll('[data-ticket-edit-open]');
+        const closeTicketEditButtons = document.querySelectorAll('[data-ticket-edit-close]');
+
+        function openTicketEditModal(button) {
+            const modal = document.getElementById(button.dataset.target);
+
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeTicketEditModal(modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        openTicketEditButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                openTicketEditModal(button);
+            });
+        });
+
+        closeTicketEditButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const modal = button.closest('[id^="ticketEditModal-"]');
+
+                if (modal) {
+                    closeTicketEditModal(modal);
+                }
+            });
+        });
+
+        document.querySelectorAll('[id^="ticketEditModal-"]').forEach(function (modal) {
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    closeTicketEditModal(modal);
+                }
+            });
+        });
 
         const ticketDetailModal = document.getElementById('ticketDetailModal');
         const openTicketDetailButtons = document.querySelectorAll('[data-ticket-detail-open]');
