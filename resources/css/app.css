@@ -758,6 +758,9 @@ a { text-decoration: none; color: inherit; }
     margin-bottom: 1.5rem;
     backdrop-filter: blur(8px);
 }
+.hero .hero-badge {
+    display: none;
+}
 .hero-badge span { width: 6px; height: 6px; border-radius: 50%; background: var(--green-light); display: block; }
 .hero h1 {
     font-family: 'Playfair Display', serif;
