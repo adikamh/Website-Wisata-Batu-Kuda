@@ -14,6 +14,8 @@
 
 @section('content')
 
+@php($authVisualImage = asset('images/about-main.jpeg'))
+
 <div class="auth-layout register-layout">
 
     {{-- ── PANEL KIRI (Form) ── --}}
@@ -49,6 +51,8 @@
                 @csrf
                 {{-- Role fixed sebagai 'user' --}}
                 <input type="hidden" name="role" value="user">
+                <input type="hidden" name="latitude" id="latitude" value="{{ old('latitude') }}">
+                <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude') }}">
 
                 <div class="form-row">
                     {{-- Nama Lengkap --}}
@@ -192,7 +196,9 @@
 
     {{-- ── PANEL KANAN (Visual) ── --}}
     <div class="auth-visual register-visual">
-        <div class="visual-bg reg-bg"></div>
+        <div class="visual-bg">
+            <img src="{{ $authVisualImage }}" alt="Visual register Batu Kuda" loading="eager">
+        </div>
         <div class="visual-overlay"></div>
 
         <div class="visual-content">

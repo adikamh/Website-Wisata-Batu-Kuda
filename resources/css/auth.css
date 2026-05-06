@@ -118,17 +118,18 @@ img {
 .visual-bg {
     position: absolute;
     inset: 0;
-    background: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1400&q=85') center/cover no-repeat;
     transform: scale(1.04);
     transition: transform 8s ease;
 }
 
-.visual-bg:hover {
-    transform: scale(1);
+.visual-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-.reg-bg {
-    background: url('https://images.unsplash.com/photo-1448375240586-882707db888b?w=1400&q=85') center/cover no-repeat;
+.visual-bg:hover {
+    transform: scale(1);
 }
 
 .visual-overlay {

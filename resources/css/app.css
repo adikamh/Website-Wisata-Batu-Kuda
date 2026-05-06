@@ -87,15 +87,31 @@ a { text-decoration: none; color: inherit; }
 }
 .nav-logo {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     font-family: 'Playfair Display', serif;
-    font-size: 1.35rem;
-    font-weight: 700;
     color: var(--white);
     letter-spacing: 0.02em;
 }
 .nav-logo svg { width: 32px; height: 32px; flex-shrink: 0; }
+.nav-logo__text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.08rem;
+}
+.nav-logo__title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+.nav-logo__subtitle {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+}
 .nav-shell {
     display: flex;
     align-items: center;
@@ -315,9 +331,19 @@ a { text-decoration: none; color: inherit; }
     position: absolute;
     inset: 0 0 auto;
     height: 100%;
-    background:
-        linear-gradient(135deg, rgba(13,40,24,0.92), rgba(45,106,79,0.86)),
-        url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1600&q=80') center/cover;
+}
+
+.ticket-hero__backdrop img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ticket-hero__overlay {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(13,40,24,0.92), rgba(45,106,79,0.86));
 }
 .ticket-hero__content {
     position: relative;
@@ -682,10 +708,19 @@ a { text-decoration: none; color: inherit; }
 .hero-bg {
     position: absolute;
     inset: -20% 0 0 0;
-    background:
-        linear-gradient(to bottom, rgba(13,40,24,0.7) 0%, rgba(13,40,24,0.3) 50%, rgba(13,40,24,0.75) 100%),
-        url('https://images.unsplash.com/photo-1586348943529-beaae6c28db9?w=1600&q=80') center/cover no-repeat;
     will-change: transform;
+}
+
+.hero-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: -20% 0 0 0;
+    background: linear-gradient(to bottom, rgba(13,40,24,0.7) 0%, rgba(13,40,24,0.3) 50%, rgba(13,40,24,0.75) 100%);
 }
 /* Decorative leaf overlay */
 .hero-bg::after {
@@ -698,12 +733,16 @@ a { text-decoration: none; color: inherit; }
 .hero-content {
     position: relative;
     z-index: 2;
+    display: flex;
+    flex-direction: column;
     max-width: 760px;
     padding: 0 2.5rem;
     margin-left: 8vw;
     animation: fadeUp 1s 0.3s ease both;
 }
+.hero-content h1 { order: 1; }
 .hero-badge {
+    order: 2;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -734,6 +773,7 @@ a { text-decoration: none; color: inherit; }
     display: block;
 }
 .hero p {
+    order: 3;
     font-size: 1.1rem;
     color: rgba(255,255,255,0.82);
     max-width: 520px;
@@ -741,6 +781,7 @@ a { text-decoration: none; color: inherit; }
     line-height: 1.75;
 }
 .hero-cta {
+    order: 4;
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;

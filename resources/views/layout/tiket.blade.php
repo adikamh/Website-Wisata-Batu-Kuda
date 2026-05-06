@@ -18,8 +18,13 @@
     @endif
 
     <main class="ticket-page">
+        @php($ticketHeroImage = asset('images/tiket.jpeg'))
+
         <section class="ticket-hero">
-            <div class="ticket-hero__backdrop"></div>
+            <div class="ticket-hero__backdrop">
+                <img src="{{ $ticketHeroImage }}" alt="Visual pemesanan tiket Batu Kuda" loading="eager">
+            </div>
+            <div class="ticket-hero__overlay"></div>
             <div class="container ticket-hero__content">
                 <div class="ticket-hero__copy fade-up">
                     <div class="section-tag">Pemesanan Tiket</div>

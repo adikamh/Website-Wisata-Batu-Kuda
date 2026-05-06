@@ -9,7 +9,10 @@
             <path d="M4 26L12 12L18 20L22 14L28 26H4Z" fill="#74c69d" opacity="0.9"/>
             <path d="M18 8C18 8 24 10 22 18C20 15 17 14 16 11C15 14 13 16 11 18C9 10 16 6 18 8Z" fill="#b7e4c7"/>
         </svg>
-        Batu Kuda
+        <span class="nav-logo__text">
+            <span class="nav-logo__title">Batu Kuda</span>
+            <span class="nav-logo__subtitle">Kabupaten Bandung · Jawa Barat</span>
+        </span>
     </a>
 
     <button type="button" class="nav-toggle" id="navToggle" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="navLinks">
