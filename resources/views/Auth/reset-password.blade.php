@@ -7,9 +7,13 @@
 @endpush
 
 @section('content')
+
+@php($authVisualImage = asset('images/tiket.jpeg'))
 <div class="auth-layout">
     <div class="auth-visual">
-        <div class="visual-bg"></div>
+        <div class="visual-bg">
+            <img src="{{ $authVisualImage }}" alt="Visual ubah password Batu Kuda" loading="eager">
+        </div>
         <div class="visual-overlay"></div>
 
         <div class="visual-content">

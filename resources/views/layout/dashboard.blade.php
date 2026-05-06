@@ -13,8 +13,24 @@
 
 @section('content')
 
+@php
+    $heroImage = asset('images/hero.jpeg');
+    $aboutMainImage = asset('images/about-main.jpeg');
+    $aboutAccentImage = asset('images/about-accent.jpeg');
+    $galleryImages = [
+        ['src' => asset('images/gallery-1.jpeg'), 'alt' => 'Puncak Gunung', 'label' => 'Panorama Puncak'],
+        ['src' => asset('images/gallery-2.jpeg'), 'alt' => 'Hutan Pinus', 'label' => 'Hutan Pinus'],
+        ['src' => asset('images/gallery-3.jpeg'), 'alt' => 'Sunrise', 'label' => 'Sunrise Spektakuler'],
+        ['src' => asset('images/gallery-4.jpeg'), 'alt' => 'Jalur Trekking', 'label' => 'Jalur Trekking'],
+        ['src' => asset('images/gallery-5.jpeg'), 'alt' => 'Alam Bebas', 'label' => 'Udara Segar'],
+    ];
+@endphp
+
 <section class="hero">
-    <div class="hero-bg"></div>
+    <div class="hero-bg">
+        <img src="{{ $heroImage }}" alt="Pemandangan utama Batu Kuda" loading="eager">
+    </div>
+    <div class="hero-overlay"></div>
 
     <div class="hero-content">
         <div class="hero-badge">
@@ -64,14 +80,14 @@
             <div class="about-img-wrap fade-up">
                 <div class="about-img-main">
                     <img
-                        src="https://images.unsplash.com/photo-1501854140801-50d01698950b?w=900&q=80"
+                        src="{{ $aboutMainImage }}"
                         alt="Pemandangan Batu Kuda Bandung"
                         loading="lazy"
                     >
                 </div>
 
                 <div class="about-img-accent">
-                    <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&q=80" alt="Hutan Pinus">
+                    <img src="{{ $aboutAccentImage }}" alt="Hutan Pinus Batu Kuda" loading="lazy">
                 </div>
 
                 <div class="badge-green">
@@ -178,26 +194,12 @@
         </div>
 
         <div class="gallery-grid">
-            <div class="gallery-item fade-up">
-                <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80" alt="Puncak Gunung">
-                <div class="overlay"><div class="overlay-text">Panorama Puncak</div></div>
-            </div>
-            <div class="gallery-item fade-up">
-                <img src="https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80" alt="Hutan Pinus">
-                <div class="overlay"><div class="overlay-text">Hutan Pinus</div></div>
-            </div>
-            <div class="gallery-item fade-up">
-                <img src="https://images.unsplash.com/photo-1502481851512-e9e2529bfbf9?w=700&q=80" alt="Sunrise">
-                <div class="overlay"><div class="overlay-text">Sunrise Spektakuler</div></div>
-            </div>
-            <div class="gallery-item fade-up">
-                <img src="https://images.unsplash.com/photo-1540390769625-2fc3f8b1d50c?w=600&q=80" alt="Jalur Trekking">
-                <div class="overlay"><div class="overlay-text">Jalur Trekking</div></div>
-            </div>
-            <div class="gallery-item fade-up">
-                <img src="https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=800&q=80" alt="Alam Bebas">
-                <div class="overlay"><div class="overlay-text">Udara Segar</div></div>
-            </div>
+            @foreach ($galleryImages as $image)
+                <div class="gallery-item fade-up">
+                    <img src="{{ $image['src'] }}" alt="{{ $image['alt'] }}" loading="lazy">
+                    <div class="overlay"><div class="overlay-text">{{ $image['label'] }}</div></div>
+                </div>
+            @endforeach
         </div>
     </div>
 </section>
@@ -312,6 +314,8 @@
 
 @php
     $mapUserAddress = Auth::check() ? (Auth::user()->Address ?? '') : '';
+    $mapUserLatitude = Auth::check() ? Auth::user()->latitude : null;
+    $mapUserLongitude = Auth::check() ? Auth::user()->longitude : null;
 @endphp
 
 <section class="map-section" id="lokasi">
@@ -334,6 +338,8 @@
                 class="leaflet-map"
                 data-is-authenticated="{{ Auth::check() ? 'true' : 'false' }}"
                 data-user-address="{{ $mapUserAddress }}"
+                data-user-lat="{{ $mapUserLatitude }}"
+                data-user-lng="{{ $mapUserLongitude }}"
                 data-destination-name="Wisata Batu Kuda"
                 data-destination-lat="-6.8567"
                 data-destination-lng="107.7178"
@@ -380,6 +386,8 @@
             const destinationName = mapElement.dataset.destinationName || 'Batu Kuda';
             const isAuthenticated = mapElement.dataset.isAuthenticated === 'true';
             const userAddress = (mapElement.dataset.userAddress || '').trim();
+            const userLatitude = Number.parseFloat(mapElement.dataset.userLat || '');
+            const userLongitude = Number.parseFloat(mapElement.dataset.userLng || '');
             const map = L.map(mapElement, {
                 scrollWheelZoom: false,
             }).setView(destination, 14);
@@ -426,6 +434,32 @@
                 return [Number(results[0].lat), Number(results[0].lon)];
             };
 
+            const formatDuration = (durationInSeconds) => {
+                const totalMinutes = Math.max(1, Math.round(durationInSeconds / 60));
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+
+                if (hours <= 0) {
+                    return `${totalMinutes} menit`;
+                }
+
+                if (minutes === 0) {
+                    return `${hours} jam`;
+                }
+
+                return `${hours} jam ${minutes} menit`;
+            };
+
+            const formatDistance = (distanceInMeters) => {
+                const distanceInKm = distanceInMeters / 1000;
+
+                if (distanceInKm < 1) {
+                    return `${Math.round(distanceInMeters)} m`;
+                }
+
+                return `${distanceInKm.toFixed(1)} km`;
+            };
+
             const drawRoute = async (origin) => {
                 const routeUrl = [
                     'https://router.project-osrm.org/route/v1/driving',
@@ -442,7 +476,8 @@
                 }
 
                 const data = await response.json();
-                const coordinates = data.routes?.[0]?.geometry?.coordinates;
+                const route = data.routes?.[0];
+                const coordinates = route?.geometry?.coordinates;
 
                 if (!Array.isArray(coordinates) || coordinates.length === 0) {
                     throw new Error('Data rute kosong.');
@@ -450,17 +485,21 @@
 
                 const routeLine = coordinates.map(([lng, lat]) => [lat, lng]);
 
-                return L.polyline(routeLine, {
-                    color: '#e8c97a',
-                    weight: 5,
-                    opacity: 0.95,
-                    lineCap: 'round',
-                    lineJoin: 'round',
-                }).addTo(map);
+                return {
+                    layer: L.polyline(routeLine, {
+                        color: '#2563eb',
+                        weight: 5,
+                        opacity: 0.95,
+                        lineCap: 'round',
+                        lineJoin: 'round',
+                    }).addTo(map),
+                    duration: route?.duration ?? null,
+                    distance: route?.distance ?? null,
+                };
             };
 
             const drawFallbackLine = (origin) => L.polyline([origin, destination], {
-                color: '#e8c97a',
+                color: '#2563eb',
                 weight: 4,
                 opacity: 0.85,
                 dashArray: '10 8',
@@ -472,14 +511,28 @@
                     return;
                 }
 
-                if (!userAddress) {
-                    setStatus('Alamat akun belum tersedia. Lengkapi alamat untuk menampilkan jalur dari lokasi Anda.');
+                const hasSavedCoordinates = Number.isFinite(userLatitude) && Number.isFinite(userLongitude);
+
+                if (!hasSavedCoordinates && !userAddress) {
+                    setStatus('Alamat atau titik lokasi akun belum tersedia. Lengkapi data lokasi untuk menampilkan jalur dari lokasi Anda.');
                     return;
                 }
 
                 try {
-                    setStatus('Mencari lokasi akun Anda...');
-                    const origin = await geocodeAddress(userAddress);
+                    let origin;
+
+                    if (hasSavedCoordinates) {
+                        origin = [userLatitude, userLongitude];
+                        setStatus('Menggunakan titik lokasi akun Anda untuk membuat rute...');
+                    } else {
+                        if (!userAddress) {
+                            setStatus('Alamat akun belum tersedia. Lengkapi alamat untuk menampilkan jalur dari lokasi Anda.');
+                            return;
+                        }
+
+                        setStatus('Mencari lokasi akun Anda dari alamat...');
+                        origin = await geocodeAddress(userAddress);
+                    }
 
                     L.marker(origin)
                         .addTo(map)
@@ -490,13 +543,22 @@
                     try {
                         setStatus('Membuat jalur menuju Batu Kuda...');
                         routeLayer = await drawRoute(origin);
-                        setStatus('Jalur dari lokasi akun menuju Batu Kuda berhasil ditampilkan.');
+
+                        const durationLabel = routeLayer.duration ? formatDuration(routeLayer.duration) : null;
+                        const distanceLabel = routeLayer.distance ? formatDistance(routeLayer.distance) : null;
+                        const travelSummary = [durationLabel, distanceLabel].filter(Boolean).join(' • ');
+
+                        setStatus(
+                            travelSummary !== ''
+                                ? `Jalur menuju Batu Kuda berhasil ditampilkan. Estimasi ${travelSummary}.`
+                                : 'Jalur menuju Batu Kuda berhasil ditampilkan.'
+                        );
                     } catch (error) {
                         routeLayer = drawFallbackLine(origin);
-                        setStatus('Rute jalan belum tersedia, jadi ditampilkan garis arah dari lokasi akun ke Batu Kuda.');
+                        setStatus('Rute jalan belum tersedia, jadi ditampilkan garis arah biru dari lokasi akun ke Batu Kuda.');
                     }
 
-                    map.fitBounds(routeLayer.getBounds(), {
+                    map.fitBounds((routeLayer.layer ?? routeLayer).getBounds(), {
                         padding: [36, 36],
                     });
                 } catch (error) {

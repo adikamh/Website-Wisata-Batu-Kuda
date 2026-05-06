@@ -193,6 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initLocationPicker() {
         const addressInput = document.getElementById('address');
+        const latitudeInput = document.getElementById('latitude');
+        const longitudeInput = document.getElementById('longitude');
         const helpText = document.getElementById('locationHelp');
         const modalHelpText = document.getElementById('locationModalHelp');
         const openModalButton = document.getElementById('openLocationModal');
@@ -205,7 +207,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const hasSavedAddress = addressInput.value.trim() !== '';
-        const initialCoordinates = defaultCoordinates;
+        const savedLatitude = latitudeInput ? Number.parseFloat(latitudeInput.value) : Number.NaN;
+        const savedLongitude = longitudeInput ? Number.parseFloat(longitudeInput.value) : Number.NaN;
+        const hasSavedCoordinates = Number.isFinite(savedLatitude) && Number.isFinite(savedLongitude);
+        const initialCoordinates = hasSavedCoordinates ? [savedLatitude, savedLongitude] : defaultCoordinates;
 
         const map = window.L.map('locationMap', {
             scrollWheelZoom: false,
@@ -271,6 +276,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const normalizedLat = Number.parseFloat(lat).toFixed(6);
             const normalizedLng = Number.parseFloat(lng).toFixed(6);
             selectedCoordinates = [Number.parseFloat(normalizedLat), Number.parseFloat(normalizedLng)];
+
+            if (latitudeInput) {
+                latitudeInput.value = normalizedLat;
+            }
+
+            if (longitudeInput) {
+                longitudeInput.value = normalizedLng;
+            }
+
             setHelpMessage(message ?? `Lokasi dipilih pada ${normalizedLat}, ${normalizedLng}.`);
 
             if (marker) {
@@ -284,7 +298,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        if (hasSavedAddress) {
+        if (hasSavedCoordinates) {
+            updateLocation(savedLatitude, savedLongitude, 'Lokasi tersimpan berhasil dimuat.', false);
+            map.setView([savedLatitude, savedLongitude], 15);
+        } else if (hasSavedAddress) {
             setHelpMessage('Alamat tersimpan. Tekan ikon lokasi untuk meminta ulang lokasi perangkat.');
         }
 

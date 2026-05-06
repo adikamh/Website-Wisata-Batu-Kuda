@@ -9,9 +9,13 @@
 
 @section('content')
 
+@php($authVisualImage = asset('images/tiket.jpeg'))
+
 <div class="auth-layout otp-layout">
     <div class="auth-visual">
-        <div class="visual-bg"></div>
+        <div class="visual-bg">
+            <img src="{{ $authVisualImage }}" alt="Visual verifikasi OTP Batu Kuda" loading="eager">
+        </div>
         <div class="visual-overlay"></div>
 
         <div class="visual-content">

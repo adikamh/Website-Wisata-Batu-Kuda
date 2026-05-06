@@ -8,9 +8,13 @@
 
 @section('content')
 
+@php($authVisualImage = asset('images/login.jpeg'))
+
 <div class="auth-layout">
     <div class="auth-visual">
-        <div class="visual-bg"></div>
+        <div class="visual-bg">
+            <img src="{{ $authVisualImage }}" alt="Visual lupa password Batu Kuda" loading="eager">
+        </div>
         <div class="visual-overlay"></div>
 
         <div class="visual-content">
