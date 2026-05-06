@@ -17,6 +17,11 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AdminUserSeeder::class,
+            WisataSeeder::class,
+            TiketKategoriSeeder::class,     // 1. Users dulu
+            GallerySeeder::class,        // 2. Gallery
+            KomentarSeeder::class,       // 3. Komentar (butuh user & gallery)
+            LikeFotoSeeder::class,
         ]);
     }
 }

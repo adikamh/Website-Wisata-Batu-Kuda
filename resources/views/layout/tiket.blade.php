@@ -1,25 +1,30 @@
-@extends('layout.main')
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Pemesanan tiket Batu Kuda untuk kunjungan biasa dan camping.">
+    <title>Tiket | Batu Kuda</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body>
+    @include('layout.navbar')
+    @include('layout.cookie-consent')
 
-@section('title', 'Tiket | Batu Kuda')
-@section('meta_description', 'Pemesanan tiket Batu Kuda untuk kunjungan biasa dan camping.')
+    @if (session('status'))
+        <div class="flash-banner">
+            {{ session('status') }}
+        </div>
+    @endif
 
-@push('styles')
-    @vite(['resources/css/tiket.css'])
-@endpush
+    <main class="ticket-page">
+        @php($ticketHeroImage = asset('images/tiket.jpeg'))
 
-@section('content')
-    @php
-        $selectedPackageKey = array_key_exists(old('package_type', 'visit'), $ticketPackages)
-            ? old('package_type', 'visit')
-            : 'visit';
-        $selectedPaymentCategory = array_key_exists(old('payment_category', 'bank'), $paymentOptions)
-            ? old('payment_category', 'bank')
-            : 'bank';
-    @endphp
-
-    <div class="ticket-page">
         <section class="ticket-hero">
-            <div class="ticket-hero__backdrop"></div>
+            <div class="ticket-hero__backdrop">
+                <img src="{{ $ticketHeroImage }}" alt="Visual pemesanan tiket Batu Kuda" loading="eager">
+            </div>
+            <div class="ticket-hero__overlay"></div>
             <div class="container ticket-hero__content">
                 <div class="ticket-hero__copy fade-up">
                     <div class="section-tag">Pemesanan Tiket</div>
@@ -81,6 +86,8 @@
                             </label>
                         </div>
 
+                        @php($selectedTicketId = (int) old('ticket_category_id', array_key_first($ticketPackages)))
+
                         <div class="ticket-section-block">
                             <div class="ticket-block__title">
                                 <h3>Pilih paket wisata</h3>
@@ -90,7 +97,7 @@
                             <div class="ticket-package-grid">
                                 @foreach ($ticketPackages as $packageKey => $package)
                                     <label class="ticket-choice-card">
-                                        <input type="radio" name="package_type" value="{{ $packageKey }}" {{ $selectedPackageKey === $packageKey ? 'checked' : '' }}>
+                                        <input type="radio" name="ticket_category_id" value="{{ $packageKey }}" data-ticket-type="{{ $package['type'] }}" data-ticket-name="{{ $package['name'] }}" data-ticket-price="{{ $package['price'] }}" {{ $selectedTicketId === (int) $packageKey ? 'checked' : '' }}>
                                         <div class="ticket-choice-card__content">
                                             <div class="ticket-choice-card__head">
                                                 <div>
@@ -109,7 +116,7 @@
                                     </label>
                                 @endforeach
                             </div>
-                            @error('package_type')
+                            @error('ticket_category_id')
                                 <small class="ticket-error">{{ $message }}</small>
                             @enderror
                         </div>
@@ -131,8 +138,8 @@
                                 @enderror
                             </label>
 
-                            <label class="ticket-field ticket-field--camping {{ $selectedPackageKey === 'camping' ? '' : 'is-hidden' }}">
-                                <span>Tanggal Selesai Camping</span>
+                            <label class="ticket-field ticket-field--checkout">
+                                <span>Tanggal Keluar</span>
                                 <input type="date" name="camping_end_date" value="{{ old('camping_end_date', now()->toDateString()) }}" min="{{ old('visit_date', now()->toDateString()) }}">
                                 @error('camping_end_date')
                                     <small class="ticket-error">{{ $message }}</small>
@@ -149,7 +156,7 @@
                             <div class="ticket-payment-tabs">
                                 @foreach ($paymentOptions as $categoryKey => $methods)
                                     <label class="ticket-payment-tab">
-                                        <input type="radio" name="payment_category" value="{{ $categoryKey }}" {{ $selectedPaymentCategory === $categoryKey ? 'checked' : '' }}>
+                                        <input type="radio" name="payment_category" value="{{ $categoryKey }}" {{ old('payment_category', 'bank') === $categoryKey ? 'checked' : '' }}>
                                         <span>{{ $categoryKey === 'bank' ? 'Bank' : ($categoryKey === 'ewallet' ? 'E-Wallet' : 'QRIS') }}</span>
                                     </label>
                                 @endforeach
@@ -160,7 +167,7 @@
 
                             <div class="ticket-payment-methods">
                                 @foreach ($paymentOptions as $categoryKey => $methods)
-                                    <div class="ticket-payment-group {{ $selectedPaymentCategory === $categoryKey ? 'is-active' : '' }}" data-payment-group="{{ $categoryKey }}">
+                                    <div class="ticket-payment-group {{ old('payment_category', 'bank') === $categoryKey ? 'is-active' : '' }}" data-payment-group="{{ $categoryKey }}">
                                         @foreach ($methods as $methodKey => $methodLabel)
                                             <label class="ticket-method-card">
                                                 <input type="radio" name="payment_method" value="{{ $methodKey }}" {{ old('payment_method', $categoryKey === 'bank' && $methodKey === 'bca' ? 'bca' : null) === $methodKey ? 'checked' : '' }}>
@@ -193,13 +200,13 @@
                             <div class="section-tag">Ringkasan</div>
                             <h2>Estimasi pembayaran</h2>
                         </div>
-                        <p>Total akan menyesuaikan paket, jumlah orang, dan durasi camping.</p>
+                        <p>Total akan menyesuaikan paket, jumlah orang, dan durasi kunjungan.</p>
                     </div>
 
-                    <div class="ticket-summary-box" data-ticket-summary data-package-visit-price="{{ $ticketPackages['visit']['price'] }}" data-package-visit-name="{{ $ticketPackages['visit']['name'] }}" data-package-camping-price="{{ $ticketPackages['camping']['price'] }}" data-package-camping-name="{{ $ticketPackages['camping']['name'] }}">
+                    <div class="ticket-summary-box" data-ticket-summary>
                         <div class="ticket-summary-row">
                             <span>Paket</span>
-                            <strong data-summary-package>{{ $ticketPackages[$selectedPackageKey]['name'] }}</strong>
+                            <strong data-summary-package>{{ $ticketPackages[$selectedTicketId]['name'] ?? '-' }}</strong>
                         </div>
                         <div class="ticket-summary-row">
                             <span>Jumlah orang</span>
@@ -211,17 +218,17 @@
                         </div>
                         <div class="ticket-summary-row">
                             <span>Harga per orang</span>
-                            <strong>Rp <span data-summary-price>{{ number_format($ticketPackages[$selectedPackageKey]['price'], 0, ',', '.') }}</span></strong>
+                            <strong>Rp <span data-summary-price>{{ number_format($ticketPackages[$selectedTicketId]['price'] ?? 0, 0, ',', '.') }}</span></strong>
                         </div>
                         <div class="ticket-summary-row ticket-summary-row--total">
                             <span>Total bayar</span>
-                            <strong>Rp <span data-summary-total>{{ number_format($ticketPackages[$selectedPackageKey]['price'] * (int) old('visitor_count', 1), 0, ',', '.') }}</span></strong>
+                            <strong>Rp <span data-summary-total>{{ number_format(($ticketPackages[$selectedTicketId]['price'] ?? 0) * (int) old('visitor_count', 1), 0, ',', '.') }}</span></strong>
                         </div>
                     </div>
 
                     <div class="ticket-summary-note">
                         <h3>Catatan paket</h3>
-                        <p>Paket camping dihitung per orang per hari. Paket kunjungan biasa berlaku untuk satu hari kunjungan di area wisata Batu Kuda.</p>
+                        <p>Tanggal keluar dipakai untuk laporan kunjungan dan perhitungan durasi tiket.</p>
                     </div>
 
                     @if ($recentTicket)
@@ -259,9 +266,6 @@
                 </aside>
             </div>
         </section>
-    </div>
-@endsection
-
-@push('scripts')
-    @vite(['resources/js/tiket.js'])
-@endpush
+    </main>
+</body>
+</html>

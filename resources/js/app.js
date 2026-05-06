@@ -152,4 +152,94 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         obs.observe(counter);
     });
+
+    const packageRadios = document.querySelectorAll('input[name="ticket_category_id"]');
+    const paymentCategoryRadios = document.querySelectorAll('input[name="payment_category"]');
+    const paymentGroups = document.querySelectorAll('[data-payment-group]');
+    const visitDateInput = document.querySelector('input[name="visit_date"]');
+    const campingEndDateInput = document.querySelector('input[name="camping_end_date"]');
+    const visitorCountInput = document.querySelector('input[name="visitor_count"]');
+    const summaryBox = document.querySelector('[data-ticket-summary]');
+
+    const formatRupiah = (value) => new Intl.NumberFormat('id-ID').format(value);
+
+    const syncCheckoutDate = () => {
+        if (visitDateInput && campingEndDateInput) {
+            campingEndDateInput.min = visitDateInput.value || '';
+
+            if (!campingEndDateInput.value || campingEndDateInput.value < campingEndDateInput.min) {
+                campingEndDateInput.value = campingEndDateInput.min;
+            }
+        }
+    };
+
+    const syncPaymentGroups = () => {
+        const selectedCategory = document.querySelector('input[name="payment_category"]:checked')?.value ?? 'bank';
+
+        paymentGroups.forEach((group) => {
+            const isActive = group.dataset.paymentGroup === selectedCategory;
+            group.classList.toggle('is-active', isActive);
+
+            if (isActive && !group.querySelector('input[name="payment_method"]:checked')) {
+                group.querySelector('input[name="payment_method"]')?.click();
+            }
+        });
+    };
+
+    const calculateDays = () => {
+        if (!visitDateInput?.value || !campingEndDateInput?.value) {
+            return 1;
+        }
+
+        const start = new Date(visitDateInput.value);
+        const end = new Date(campingEndDateInput.value);
+        const milliseconds = end.getTime() - start.getTime();
+
+        if (Number.isNaN(milliseconds) || milliseconds < 0) {
+            return 1;
+        }
+
+        return Math.floor(milliseconds / (1000 * 60 * 60 * 24)) + 1;
+    };
+
+    const syncSummary = () => {
+        if (!summaryBox) {
+            return;
+        }
+
+        const selectedPackage = document.querySelector('input[name="ticket_category_id"]:checked');
+        const visitors = Math.max(1, Number.parseInt(visitorCountInput?.value ?? '1', 10) || 1);
+        const days = calculateDays();
+        const packageName = selectedPackage?.dataset.ticketName ?? '-';
+        const packagePrice = Number.parseInt(selectedPackage?.dataset.ticketPrice ?? '0', 10);
+        const total = packagePrice * visitors * days;
+
+        summaryBox.querySelector('[data-summary-package]').textContent = packageName;
+        summaryBox.querySelector('[data-summary-visitors]').textContent = visitors;
+        summaryBox.querySelector('[data-summary-days]').textContent = days;
+        summaryBox.querySelector('[data-summary-price]').textContent = formatRupiah(packagePrice);
+        summaryBox.querySelector('[data-summary-total]').textContent = formatRupiah(total);
+    };
+
+    packageRadios.forEach((radio) => {
+        radio.addEventListener('change', () => {
+            syncCheckoutDate();
+            syncSummary();
+        });
+    });
+
+    paymentCategoryRadios.forEach((radio) => {
+        radio.addEventListener('change', syncPaymentGroups);
+    });
+
+    visitDateInput?.addEventListener('change', () => {
+        syncCheckoutDate();
+        syncSummary();
+    });
+    campingEndDateInput?.addEventListener('change', syncSummary);
+    visitorCountInput?.addEventListener('input', syncSummary);
+
+    syncCheckoutDate();
+    syncPaymentGroups();
+    syncSummary();
 });

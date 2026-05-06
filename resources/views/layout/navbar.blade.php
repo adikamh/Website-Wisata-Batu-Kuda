@@ -9,7 +9,10 @@
             <path d="M4 26L12 12L18 20L22 14L28 26H4Z" fill="#74c69d" opacity="0.9"/>
             <path d="M18 8C18 8 24 10 22 18C20 15 17 14 16 11C15 14 13 16 11 18C9 10 16 6 18 8Z" fill="#b7e4c7"/>
         </svg>
-        Batu Kuda
+        <span class="nav-logo__text">
+            <span class="nav-logo__title">Batu Kuda</span>
+            <span class="nav-logo__subtitle">Kabupaten Bandung · Jawa Barat</span>
+        </span>
     </a>
 
     <button type="button" class="nav-toggle" id="navToggle" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="navLinks">
@@ -21,13 +24,25 @@
     <div class="nav-shell" id="navLinks">
         <ul class="nav-links">
             <li><a href="{{ $anchor('tentang') }}" data-nav-link data-section="tentang" class="{{ $isHome ? 'is-home-link' : '' }}">Tentang</a></li>
-            <li><a href="{{ $anchor('galeri') }}" data-nav-link data-section="galeri" class="{{ $isHome ? 'is-home-link' : '' }}">Galeri</a></li>
+            <li><a href="{{ route('gallery.index') }}" data-nav-link class="{{ request()->routeIs('gallery.*') ? 'is-active' : '' }}">Galeri</a></li>
             <li><a href="{{ $anchor('info') }}" data-nav-link data-section="info" class="{{ $isHome ? 'is-home-link' : '' }}">Info Wisata</a></li>
             <li><a href="{{ route('tiket') }}" data-nav-link class="{{ request()->routeIs('tiket') ? 'is-active' : '' }}">Tiket</a></li>
             <li><a href="{{ $anchor('lokasi') }}" data-nav-link data-section="lokasi" class="{{ $isHome ? 'is-home-link' : '' }}">Lokasi</a></li>
         </ul>
 
         @if(Auth::check())
+            @if(Auth::user()->isAdmin())
+                <a href="{{ route('admin.dashboard') }}" class="btn-login btn-admin-dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    Dashboard Admin
+                </a>
+            @endif
+
             <div class="nav-user dropdown">
                 <button type="button" class="btn-login btn-user" id="userDropdownButton" aria-expanded="false" aria-controls="userDropdown">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
