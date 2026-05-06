@@ -43,11 +43,17 @@ class Gallery extends Model
         $path = ltrim($path, '/');
 
         if (Str::startsWith($path, 'storage/')) {
+            $storagePath = Str::after($path, 'storage/');
+
+            if (Storage::disk('public')->exists($storagePath)) {
+                return route('gallery.image', ['path' => $storagePath]);
+            }
+
             return asset($path);
         }
 
         if (Storage::disk('public')->exists($path)) {
-            return asset('storage/' . $path);
+            return route('gallery.image', ['path' => $path]);
         }
 
         return asset($path);
