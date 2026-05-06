@@ -1,0 +1,54 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Notification extends Model
+{
+
+    protected $table = 'notifications';
+    
+    protected $fillable = [
+        'user_id',
+        'judul',
+        'pesan',
+        'is_read'
+    ];
+    
+    protected $casts = [
+        'is_read' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+    
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+    
+    public function scopeUnread($query)
+    {
+        return $query->where('is_read', false);
+    }
+    
+    public function scopeRead($query)
+    {
+        return $query->where('is_read', true);
+    }
+    
+    public function scopeForUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+    
+    public function markAsRead()
+    {
+        $this->update(['is_read' => true]);
+    }
+    
+    public function markAsUnread()
+    {
+        $this->update(['is_read' => false]);
+    }
+}
