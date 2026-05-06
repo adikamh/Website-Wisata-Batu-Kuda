@@ -12,6 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const $  = (sel, ctx = document) => ctx.querySelector(sel);
     const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
     const url = (template, id) => template.replace('__id__', id);
+    const imageRoute = (path) => {
+        const encodedPath = String(path)
+            .split('/')
+            .map((segment) => encodeURIComponent(segment))
+            .join('/');
+
+        return ROUTES.image ? ROUTES.image.replace('__path__', encodedPath) : `/storage/${encodedPath}`;
+    };
 
     const toast = (() => {
         const el  = $('#toast');
@@ -304,17 +312,84 @@ document.addEventListener('DOMContentLoaded', () => {
     ══════════════════════════════════════ */
     const uploadModal    = $('#uploadModal');
     const uploadForm     = $('#uploadForm');
+    const uploadModalTitle = $('#uploadModalTitle');
     const dropzone       = $('#dropzone');
     const dropzoneInner  = $('#dropzoneInner');
+    const dropzoneText   = $('#dropzoneText');
+    const dropzoneHint   = $('#dropzoneHint');
     const dropzonePreview = $('#dropzonePreview');
     const fotoInput      = $('#fotoInput');
+    const titleInput     = $('#judulFoto');
     const descTextarea   = $('#deskripsiFoto');
     const descCount      = $('#descCount');
     const uploadError    = $('#uploadError');
     const uploadSubmit   = $('#uploadSubmit');
+    const uploadSubmitText = $('#uploadSubmitText');
+    const uploadLoadingText = $('#uploadLoadingText');
+    const uploadCancel   = $('#uploadCancel');
+    let editingGalleryId = null;
+
+    const setDropzonePreview = (src = '') => {
+        if (!dropzonePreview || !dropzoneInner) return;
+
+        if (src) {
+            dropzonePreview.src = src;
+            dropzonePreview.hidden = false;
+            dropzoneInner.style.display = 'none';
+            dropzone?.classList.add('has-preview');
+            return;
+        }
+
+        dropzonePreview.src = '';
+        dropzonePreview.hidden = true;
+        dropzoneInner.style.display = '';
+        dropzone?.classList.remove('has-preview');
+    };
+
+    const setUploadMode = (mode, card = null) => {
+        if (!uploadForm) return;
+
+        const isEdit = mode === 'edit';
+        uploadForm.dataset.mode = isEdit ? 'edit' : 'create';
+        editingGalleryId = isEdit ? card?.dataset.id : null;
+
+        uploadModalTitle.textContent = isEdit ? 'Edit Foto Galeri' : 'Upload Foto Baru';
+        uploadSubmitText.textContent = isEdit ? 'Simpan Perubahan' : 'Upload Foto';
+        uploadLoadingText.textContent = isEdit ? 'Menyimpan...' : 'Mengupload...';
+        dropzoneText.innerHTML = isEdit
+            ? 'Ganti foto dengan <label for="fotoInput" class="dropzone__link">pilih file</label>'
+            : 'Seret foto ke sini atau <label for="fotoInput" class="dropzone__link">pilih file</label>';
+        dropzoneHint.textContent = isEdit
+            ? 'Kosongkan jika tidak ingin mengganti gambar'
+            : 'PNG, JPG, WebP · Maks 5 MB';
+
+        if (fotoInput) {
+            fotoInput.value = '';
+            fotoInput.required = !isEdit;
+        }
+
+        if (titleInput) {
+            titleInput.value = isEdit ? card?.dataset.title ?? '' : '';
+        }
+
+        if (descTextarea) {
+            descTextarea.value = isEdit ? card?.dataset.description ?? '' : '';
+            descCount.textContent = `${descTextarea.value.length} / 500`;
+        }
+
+        if (uploadError) uploadError.hidden = true;
+        setDropzonePreview(isEdit ? card?.dataset.imageUrl ?? '' : '');
+    };
 
     const openUpload = () => {
         if (!uploadModal) return;
+        setUploadMode('create');
+        uploadModal.hidden = false;
+        document.body.style.overflow = 'hidden';
+    };
+    const openEdit = (card) => {
+        if (!uploadModal || !card) return;
+        setUploadMode('edit', card);
         uploadModal.hidden = false;
         document.body.style.overflow = 'hidden';
     };
@@ -322,12 +397,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!uploadModal) return;
         uploadModal.hidden = true;
         document.body.style.overflow = '';
+        setUploadMode('create');
     };
 
     $('#openUploadModal')?.addEventListener('click', openUpload);
     $('#openUploadModalEmpty')?.addEventListener('click', openUpload);
     $('#uploadClose')?.addEventListener('click', closeUpload);
     $('#uploadCloseBtn')?.addEventListener('click', closeUpload);
+    uploadCancel?.addEventListener('click', closeUpload);
 
     /* Char counter */
     descTextarea?.addEventListener('input', () => {
@@ -373,7 +450,9 @@ document.addEventListener('DOMContentLoaded', () => {
     /* Submit upload */
     uploadForm?.addEventListener('submit', async e => {
         e.preventDefault();
-        if (!fotoInput?.files[0]) { showUploadError('Pilih foto terlebih dahulu.'); return; }
+        const isEdit = uploadForm.dataset.mode === 'edit';
+        if (!isEdit && !fotoInput?.files[0]) { showUploadError('Pilih foto terlebih dahulu.'); return; }
+        if (isEdit && !editingGalleryId) { showUploadError('Data foto yang diedit tidak ditemukan.'); return; }
 
         const btnText    = uploadSubmit?.querySelector('.btn-text');
         const btnLoading = uploadSubmit?.querySelector('.btn-loading');
@@ -384,7 +463,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const formData = new FormData(uploadForm);
-            const res  = await fetch(ROUTES.store, {
+            const endpoint = isEdit ? url(ROUTES.update, editingGalleryId) : ROUTES.store;
+
+            if (isEdit) {
+                formData.append('_method', 'PUT');
+            }
+
+            const res  = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
                 body: formData
@@ -392,16 +477,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || Object.values(data.errors || {}).flat().join(', ') || 'Upload gagal');
 
-            toast('Foto berhasil diupload! 🎉');
+            const gallery = data.gallery || data;
+            if (isEdit) {
+                updateCard(gallery);
+                toast('Foto berhasil diperbarui.');
+            } else {
+                prependCard(gallery);
+                toast('Foto berhasil diupload.');
+            }
+
             closeUpload();
-
-            // Tambah card baru ke grid (atau reload)
-            prependCard(data.gallery || data);
-            uploadForm.reset();
-            if (dropzonePreview) { dropzonePreview.hidden = true; dropzonePreview.src = ''; }
-            if (dropzoneInner)   dropzoneInner.style.display = '';
-            dropzone?.classList.remove('has-preview');
-
         } catch (err) {
             showUploadError(err.message);
         } finally {
@@ -415,6 +500,115 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!uploadError) return;
         uploadError.textContent = msg;
         uploadError.hidden = false;
+    };
+
+    document.addEventListener('click', e => {
+        const editBtn = e.target.closest('[data-gallery-edit]');
+        if (!editBtn) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        openEdit(editBtn.closest('.photo-card'));
+    });
+
+    document.addEventListener('click', async e => {
+        const deleteBtn = e.target.closest('[data-gallery-delete]');
+        if (!deleteBtn) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const galleryId = deleteBtn.dataset.galleryDelete;
+        if (!galleryId || !window.confirm('Hapus foto ini dari galeri?')) return;
+
+        deleteBtn.disabled = true;
+
+        try {
+            const res = await fetch(url(ROUTES.destroy, galleryId), {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) throw new Error(data.message || 'Foto gagal dihapus');
+
+            const card = $(`.photo-card[data-id="${galleryId}"]`);
+            card?.remove();
+            collectIds();
+
+            if (lbGalleryId?.value === String(galleryId)) {
+                closeLightbox();
+            }
+
+            toast('Foto berhasil dihapus.');
+        } catch (err) {
+            deleteBtn.disabled = false;
+            toast('Gagal: ' + err.message);
+        }
+    });
+
+    const adminActionsHtml = (id) => {
+        if (!CFG.canUpload) return '';
+
+        return `
+            <button class="action-btn action-btn--admin action-btn--edit" data-gallery-edit="${id}" type="button" aria-label="Edit foto">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                <span>Edit</span>
+            </button>
+            <button class="action-btn action-btn--admin action-btn--delete" data-gallery-delete="${id}" type="button" aria-label="Hapus foto">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                <span>Hapus</span>
+            </button>
+        `;
+    };
+
+    const updateCard = (foto) => {
+        if (!foto?.id) return;
+
+        const card = $(`.photo-card[data-id="${foto.id}"]`);
+        if (!card) return;
+
+        const imgSrc = normalizeImageUrl(foto.image_url || foto.gambar_url);
+        card.dataset.title = foto.judul_foto || '';
+        card.dataset.description = foto.deskripsi || '';
+        card.dataset.imageUrl = imgSrc;
+
+        const img = card.querySelector('.photo-card__img');
+        if (img) {
+            img.src = imgSrc;
+            img.alt = foto.judul_foto || 'Foto galeri';
+        }
+
+        const title = card.querySelector('.photo-card__title');
+        if (title) title.textContent = foto.judul_foto || '';
+
+        const oldDesc = card.querySelector('.photo-card__desc');
+        if (foto.deskripsi) {
+            if (oldDesc) {
+                oldDesc.textContent = foto.deskripsi.slice(0, 80);
+            } else {
+                const desc = document.createElement('p');
+                desc.className = 'photo-card__desc';
+                desc.textContent = foto.deskripsi.slice(0, 80);
+                title?.after(desc);
+            }
+        } else {
+            oldDesc?.remove();
+        }
+
+        const share = card.querySelector('.action-btn--share');
+        if (share) {
+            share.dataset.title = foto.judul_foto || 'Foto Batu Kuda';
+        }
+
+        if (lbGalleryId?.value === String(foto.id)) {
+            if (lbImg) {
+                lbImg.src = imgSrc;
+                lbImg.alt = foto.judul_foto || 'Foto galeri';
+            }
+            if (lbTitle) lbTitle.textContent = foto.judul_foto || '';
+            if (lbDesc) lbDesc.textContent = foto.deskripsi || '';
+        }
     };
 
     /* Prepend new card to grid */
@@ -431,6 +625,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const article = document.createElement('article');
         article.className = 'photo-card fade-up visible';
         article.dataset.id = foto.id;
+        article.dataset.title = foto.judul_foto || '';
+        article.dataset.description = foto.deskripsi || '';
+        article.dataset.imageUrl = imgSrc;
         article.innerHTML = `
             <div class="photo-card__img-wrap">
                 <img src="${escHtml(imgSrc)}" alt="${escHtml(foto.judul_foto)}" loading="lazy" class="photo-card__img">
@@ -455,6 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                         <span>0</span>
                     </button>
+                    ${adminActionsHtml(foto.id)}
                     <button class="action-btn action-btn--share" data-url="${window.location.origin}/gallery/${foto.id}" data-title="${escHtml(foto.judul_foto)}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                     </button>
@@ -526,8 +724,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const value = String(path);
         if (/^(https?:)?\/\//.test(value)) return value;
         if (value.startsWith('/')) return value;
-        if (value.startsWith('storage/')) return `/${value}`;
-        if (value.startsWith('gallery/')) return `/storage/${value}`;
+        if (value.startsWith('storage/')) return imageRoute(value.replace(/^storage\//, ''));
+        if (value.startsWith('gallery/')) return imageRoute(value);
         return `/${value}`;
     }
 

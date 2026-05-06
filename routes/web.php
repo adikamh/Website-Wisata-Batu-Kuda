@@ -6,8 +6,18 @@ use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatbotController;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', [WisataController::class, 'dashboard'])->name('home');
+Route::get('/gallery-file/{path}', function (string $path) {
+    $path = ltrim($path, '/');
+
+    abort_if(str_contains($path, '..'), 404);
+    abort_unless(Storage::disk('public')->exists($path), 404);
+
+    return Storage::disk('public')->response($path);
+})->where('path', '.*')->name('gallery.image');
+
 Route::middleware('auth')->group(function () {
     Route::get('/tiket', [WisataController::class, 'tiket'])->name('tiket');
     Route::post('/tiket', [WisataController::class, 'storeTiket'])->name('tiket.store');
@@ -15,6 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
     Route::post('/gallery', [GalleryController::class, 'store'])->name('gallery.store');
     Route::get('/gallery/{gallery}', [GalleryController::class, 'show'])->name('gallery.show');
+    Route::put('/gallery/{gallery}', [GalleryController::class, 'update'])->name('gallery.update');
     Route::delete('/gallery/{gallery}', [GalleryController::class, 'destroy'])->name('gallery.destroy');
     Route::post('/gallery/{gallery}/like', [GalleryController::class, 'like'])->name('gallery.like');
     Route::get('/gallery/{gallery}/komentar', [GalleryController::class, 'getKomentar'])->name('gallery.komentar');
