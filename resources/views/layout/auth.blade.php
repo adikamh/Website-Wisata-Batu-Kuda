@@ -10,6 +10,7 @@
 <body class="@yield('body_class', 'auth-body')">
     @yield('content')
 
+    <x-sweet-alert :flash="false" :validation="false" />
     @stack('scripts')
 </body>
 </html>

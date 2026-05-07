@@ -16,12 +16,7 @@
 
 @include('layout.navbar')
 @include('layout.cookie-consent')
-
-@if (session('status'))
-    <div class="flash-banner">
-        {{ session('status') }}
-    </div>
-@endif
+<x-sweet-alert />
 
 <main>
     @yield('content')
