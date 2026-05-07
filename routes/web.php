@@ -21,6 +21,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/gallery/{gallery}/komentar', [GalleryController::class, 'storeKomentar'])->name('gallery.komentar.store');
     Route::delete('/gallery/komentar/{komentar}', [GalleryController::class, 'destroyKomentar'])->name('gallery.komentar.destroy');
 });
+
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
