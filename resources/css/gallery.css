@@ -352,6 +352,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
     padding-top: 0.75rem;
     border-top: 1px solid rgba(45,106,79,0.08);
 }
@@ -379,6 +380,20 @@
 .action-btn--like.is-liked:hover { background: rgba(224,82,82,0.1); }
 
 .action-btn--share { margin-left: auto; }
+.action-btn--admin {
+    background: var(--green-mist);
+    color: var(--green-deep);
+}
+.action-btn--delete {
+    color: #c0392b;
+    border-color: rgba(192,57,43,0.18);
+    background: rgba(224,82,82,0.06);
+}
+.action-btn--delete:hover {
+    color: #a93226;
+    border-color: rgba(192,57,43,0.28);
+    background: rgba(224,82,82,0.12);
+}
 
 /* Empty State */
 .gallery-empty {
@@ -945,19 +960,36 @@
     font-size: 0.85rem;
 }
 
+.upload-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 0 1.5rem 1.5rem;
+}
+.btn-upload-cancel,
 .btn-upload-submit {
-    margin: 0 1.5rem 1.5rem;
-    width: calc(100% - 3rem);
-    padding: 0.9rem;
-    background: linear-gradient(135deg, var(--green-fresh), var(--green-mid));
-    color: white;
-    border: none;
-    border-radius: var(--radius-md);
+    min-height: 42px;
+    padding: 0.72rem 1.05rem;
+    border-radius: var(--radius-sm);
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 700;
     cursor: pointer;
     transition: var(--transition);
+}
+.btn-upload-cancel {
+    background: var(--green-mist);
+    color: var(--green-deep);
+    border: 1.5px solid rgba(45,106,79,0.12);
+}
+.btn-upload-cancel:hover {
+    background: var(--green-pale);
+}
+.btn-upload-submit {
+    min-width: 148px;
+    background: linear-gradient(135deg, var(--green-fresh), var(--green-mid));
+    color: white;
+    border: none;
     box-shadow: 0 8px 24px rgba(64,145,108,0.3);
 }
 .btn-upload-submit:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(64,145,108,0.4); }

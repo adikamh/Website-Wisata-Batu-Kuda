@@ -20,6 +20,8 @@ class User extends Authenticatable
         'role',
         'Phone',
         'Address',
+        'latitude',
+        'longitude',
         'otp',
         'otp_expired_at',
         'is_verified',
@@ -38,6 +40,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'otp_expired_at' => 'datetime',
             'is_verified' => 'boolean',
+            'latitude' => 'float',
+            'longitude' => 'float',
         ];
     }
 

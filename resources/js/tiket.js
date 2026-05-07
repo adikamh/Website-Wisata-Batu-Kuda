@@ -5,10 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const packageRadios = ticketPage.querySelectorAll('input[name="package_type"]');
+    const packageRadios = ticketPage.querySelectorAll('input[name="ticket_category_id"]');
     const paymentCategoryRadios = ticketPage.querySelectorAll('input[name="payment_category"]');
     const paymentGroups = ticketPage.querySelectorAll('[data-payment-group]');
-    const campingField = ticketPage.querySelector('.ticket-field--camping');
     const visitDateInput = ticketPage.querySelector('input[name="visit_date"]');
     const campingEndDateInput = ticketPage.querySelector('input[name="camping_end_date"]');
     const visitorCountInput = ticketPage.querySelector('input[name="visitor_count"]');
@@ -17,19 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitButton = ticketPage.querySelector('.ticket-submit');
 
     const formatRupiah = (value) => new Intl.NumberFormat('id-ID').format(value);
-    const getSelectedPackage = () => ticketPage.querySelector('input[name="package_type"]:checked')?.value ?? 'visit';
+    const getSelectedPackage = () => ticketPage.querySelector('input[name="ticket_category_id"]:checked');
     const getSelectedPaymentCategory = () => ticketPage.querySelector('input[name="payment_category"]:checked')?.value ?? 'bank';
-    const toDatasetKey = (packageName, suffix) => {
-        const normalized = packageName.charAt(0).toUpperCase() + packageName.slice(1);
-        return `package${normalized}${suffix}`;
-    };
 
-    const syncCampingField = () => {
-        const selectedPackage = getSelectedPackage();
-        const isCamping = selectedPackage === 'camping';
-
-        campingField?.classList.toggle('is-hidden', !isCamping);
-
+    const syncCheckoutDate = () => {
         if (!visitDateInput || !campingEndDateInput) {
             return;
         }
@@ -55,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const calculateDays = () => {
-        if (getSelectedPackage() !== 'camping' || !visitDateInput?.value || !campingEndDateInput?.value) {
+        if (!visitDateInput?.value || !campingEndDateInput?.value) {
             return 1;
         }
 
@@ -78,8 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedPackage = getSelectedPackage();
         const visitors = Math.max(1, Number.parseInt(visitorCountInput?.value ?? '1', 10) || 1);
         const days = calculateDays();
-        const packageName = summaryBox.dataset[toDatasetKey(selectedPackage, 'Name')] ?? '-';
-        const packagePrice = Number.parseInt(summaryBox.dataset[toDatasetKey(selectedPackage, 'Price')] ?? '0', 10);
+        const packageName = selectedPackage?.dataset.ticketName ?? '-';
+        const packagePrice = Number.parseInt(selectedPackage?.dataset.ticketPrice ?? '0', 10);
         const total = packagePrice * visitors * days;
 
         summaryBox.querySelector('[data-summary-package]').textContent = packageName;
@@ -91,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     packageRadios.forEach((radio) => {
         radio.addEventListener('change', () => {
-            syncCampingField();
+            syncCheckoutDate();
             syncSummary();
         });
     });
@@ -101,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     visitDateInput?.addEventListener('change', () => {
-        syncCampingField();
+        syncCheckoutDate();
         syncSummary();
     });
     campingEndDateInput?.addEventListener('change', syncSummary);
@@ -116,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitButton.textContent = 'Memproses pesanan...';
     });
 
-    syncCampingField();
+    syncCheckoutDate();
     syncPaymentGroups();
     syncSummary();
 });

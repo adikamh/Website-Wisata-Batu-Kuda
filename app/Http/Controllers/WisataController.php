@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ETicket;
 use App\Models\PaketWisata;
+use App\Models\TiketKategori;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\Wisata;
@@ -11,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class WisataController
@@ -70,21 +72,21 @@ class WisataController
 
         $validated = $request->validate([
             'phone' => ['nullable', 'string', 'max:20'],
-            'package_type' => ['required', Rule::in(array_keys($ticketPackages))],
+            'ticket_category_id' => ['required', Rule::in(array_keys($ticketPackages))],
             'visitor_count' => ['required', 'integer', 'min:1', 'max:20'],
             'visit_date' => ['required', 'date', 'after_or_equal:today'],
-            'camping_end_date' => ['nullable', 'required_if:package_type,camping', 'date', 'after_or_equal:visit_date'],
+            'camping_end_date' => ['required', 'date', 'after_or_equal:visit_date'],
             'payment_category' => ['required', Rule::in(array_keys($paymentOptions))],
             'payment_method' => ['required', 'string', 'max:50'],
             'notes' => ['nullable', 'string', 'max:500'],
         ], [
-            'package_type.required' => 'Paket wisata wajib dipilih.',
+            'ticket_category_id.required' => 'Paket wisata wajib dipilih.',
             'visitor_count.required' => 'Jumlah orang wajib diisi.',
             'visitor_count.min' => 'Jumlah orang minimal 1.',
             'visitor_count.max' => 'Jumlah orang maksimal 20.',
             'visit_date.after_or_equal' => 'Tanggal kunjungan tidak boleh sebelum hari ini.',
-            'camping_end_date.required_if' => 'Tanggal selesai camping wajib diisi untuk paket camping.',
-            'camping_end_date.after_or_equal' => 'Tanggal selesai camping tidak boleh sebelum tanggal mulai.',
+            'camping_end_date.required' => 'Tanggal keluar wajib diisi.',
+            'camping_end_date.after_or_equal' => 'Tanggal keluar tidak boleh sebelum tanggal masuk.',
             'payment_category.required' => 'Kategori pembayaran wajib dipilih.',
             'payment_method.required' => 'Metode pembayaran wajib dipilih.',
         ]);
@@ -95,22 +97,52 @@ class WisataController
                 ->withErrors(['payment_method' => 'Metode pembayaran tidak sesuai dengan kategori yang dipilih.']);
         }
 
+        $package = $ticketPackages[$validated['ticket_category_id']];
+        $packageType = $package['type'];
+
         $startDate = Carbon::parse($validated['visit_date']);
-        $endDate = $validated['package_type'] === 'camping'
-            ? Carbon::parse($validated['camping_end_date'])
-            : $startDate;
+        $endDate = Carbon::parse($validated['camping_end_date']);
         $totalDays = (int) $startDate->diffInDays($endDate) + 1;
         $visitorCount = (int) $validated['visitor_count'];
-        $package = $ticketPackages[$validated['package_type']];
         $totalBayar = $package['price'] * $visitorCount * $totalDays;
         $paymentMethodLabel = $paymentOptions[$validated['payment_category']][$validated['payment_method']];
+        $ticketCode = 'BK-' . now()->format('YmdHis') . '-' . random_int(100, 999);
+
+        $transaction = DB::transaction(function () use ($validated, $package, $packageType, $visitorCount, $startDate, $endDate, $totalDays, $totalBayar, $paymentMethodLabel, $ticketCode) {
+            $transaction = Transaction::create([
+                'user_id' => Auth::id(),
+                'total_bayar' => $totalBayar,
+                'status_pembayaran' => 'pending',
+                'payment_method' => $paymentMethodLabel,
+            ]);
+
+            $detail = TransactionDetail::create([
+                'transaction_id' => $transaction->id,
+                'tiket_kategori_id' => $validated['ticket_category_id'],
+                'quantity' => $visitorCount,
+                'subtotal' => $package['price'] * $visitorCount,
+                'package_type' => $packageType,
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $endDate->toDateString(),
+                'total_days' => $totalDays,
+                'grand_total' => $totalBayar,
+            ]);
+
+            ETicket::create([
+                'transaction_detail_id' => $detail->id,
+                'ticket_code' => $ticketCode,
+                'qr_code_hash' => hash('sha256', $ticketCode . '|' . $transaction->id),
+            ]);
+
+            return $transaction;
+        });
 
         return redirect()
             ->route('tiket')
             ->with('status', 'Pesanan tiket berhasil dibuat.')
             ->with('recentTicket', [
-                'ticket_code' => 'BK-' . now()->format('YmdHis') . '-' . random_int(100, 999),
-                'transaction_id' => random_int(100000, 999999),
+                'ticket_code' => $ticketCode,
+                'transaction_id' => $transaction->id,
                 'package_name' => $package['name'],
                 'visitor_count' => $visitorCount,
                 'payment_method_label' => $paymentMethodLabel,
@@ -120,28 +152,55 @@ class WisataController
 
     private function ticketPackages(): array
     {
-        return [
-            'visit' => [
-                'name' => 'Kunjungan Harian',
-                'description' => 'Tiket masuk reguler untuk menikmati area wisata Batu Kuda.',
-                'price' => 10000,
-                'features' => [
-                    'Akses area wisata utama',
-                    'Berlaku untuk satu hari kunjungan',
-                    'Cocok untuk keluarga dan rombongan kecil',
-                ],
-            ],
-            'camping' => [
-                'name' => 'Camping',
-                'description' => 'Paket bermalam untuk pengunjung yang ingin camping di kawasan Batu Kuda.',
-                'price' => 25000,
-                'features' => [
-                    'Akses area camping',
-                    'Perhitungan harga per orang per hari',
-                    'Cocok untuk komunitas dan petualang',
-                ],
-            ],
-        ];
+        $tickets = TiketKategori::query()
+            ->orderBy('harga')
+            ->get();
+
+        if ($tickets->isEmpty()) {
+            $wisata = Wisata::firstOrCreate(
+                ['nama_wisata' => 'Batu Kuda'],
+                [
+                    'deskripsi' => 'Kawasan wisata alam Batu Kuda.',
+                    'lokasi' => 'Cikadut, Cimenyan, Kabupaten Bandung, Jawa Barat',
+                    'gambar_url' => asset('images/hero.jpeg'),
+                ]
+            );
+
+            TiketKategori::create([
+                'wisata_id' => $wisata->id,
+                'nama_kategori' => 'Kunjungan Harian',
+                'deskripsi' => 'Tiket masuk reguler untuk menikmati area wisata Batu Kuda.',
+                'harga' => 10000,
+            ]);
+
+            $tickets = TiketKategori::query()
+                ->orderBy('harga')
+                ->get();
+        }
+
+        return $tickets
+            ->mapWithKeys(function (TiketKategori $ticket) {
+                $isCamping = str_contains(strtolower($ticket->nama_kategori), 'camping')
+                    || str_contains(strtolower($ticket->nama_kategori), 'kemping');
+
+                return [
+                    $ticket->id => [
+                        'id' => $ticket->id,
+                        'name' => $ticket->nama_kategori,
+                        'description' => $ticket->deskripsi ?: ($isCamping
+                            ? 'Paket bermalam atau camping yang dibuat oleh admin.'
+                            : 'Tiket kunjungan yang dibuat oleh admin.'),
+                        'price' => (int) $ticket->harga,
+                        'type' => $isCamping ? 'camping' : 'visit',
+                        'features' => [
+                            $isCamping ? 'Harga dihitung per orang per hari' : 'Harga dihitung per orang',
+                            'Tiket tersedia sesuai data terbaru dari admin',
+                            'Berlaku untuk kawasan wisata Batu Kuda',
+                        ],
+                    ],
+                ];
+            })
+            ->all();
     }
 
     private function paymentOptions(): array
@@ -163,4 +222,3 @@ class WisataController
         ];
     }
 }
-

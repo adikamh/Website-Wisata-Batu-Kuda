@@ -18,8 +18,13 @@
     @endif
 
     <main class="ticket-page">
+        @php($ticketHeroImage = asset('images/tiket.jpeg'))
+
         <section class="ticket-hero">
-            <div class="ticket-hero__backdrop"></div>
+            <div class="ticket-hero__backdrop">
+                <img src="{{ $ticketHeroImage }}" alt="Visual pemesanan tiket Batu Kuda" loading="eager">
+            </div>
+            <div class="ticket-hero__overlay"></div>
             <div class="container ticket-hero__content">
                 <div class="ticket-hero__copy fade-up">
                     <div class="section-tag">Pemesanan Tiket</div>
@@ -81,6 +86,8 @@
                             </label>
                         </div>
 
+                        @php($selectedTicketId = (int) old('ticket_category_id', array_key_first($ticketPackages)))
+
                         <div class="ticket-section-block">
                             <div class="ticket-block__title">
                                 <h3>Pilih paket wisata</h3>
@@ -90,7 +97,7 @@
                             <div class="ticket-package-grid">
                                 @foreach ($ticketPackages as $packageKey => $package)
                                     <label class="ticket-choice-card">
-                                        <input type="radio" name="package_type" value="{{ $packageKey }}" {{ old('package_type', 'visit') === $packageKey ? 'checked' : '' }}>
+                                        <input type="radio" name="ticket_category_id" value="{{ $packageKey }}" data-ticket-type="{{ $package['type'] }}" data-ticket-name="{{ $package['name'] }}" data-ticket-price="{{ $package['price'] }}" {{ $selectedTicketId === (int) $packageKey ? 'checked' : '' }}>
                                         <div class="ticket-choice-card__content">
                                             <div class="ticket-choice-card__head">
                                                 <div>
@@ -109,7 +116,7 @@
                                     </label>
                                 @endforeach
                             </div>
-                            @error('package_type')
+                            @error('ticket_category_id')
                                 <small class="ticket-error">{{ $message }}</small>
                             @enderror
                         </div>
@@ -131,8 +138,8 @@
                                 @enderror
                             </label>
 
-                            <label class="ticket-field ticket-field--camping {{ old('package_type', 'visit') === 'camping' ? '' : 'is-hidden' }}">
-                                <span>Tanggal Selesai Camping</span>
+                            <label class="ticket-field ticket-field--checkout">
+                                <span>Tanggal Keluar</span>
                                 <input type="date" name="camping_end_date" value="{{ old('camping_end_date', now()->toDateString()) }}" min="{{ old('visit_date', now()->toDateString()) }}">
                                 @error('camping_end_date')
                                     <small class="ticket-error">{{ $message }}</small>
@@ -193,13 +200,13 @@
                             <div class="section-tag">Ringkasan</div>
                             <h2>Estimasi pembayaran</h2>
                         </div>
-                        <p>Total akan menyesuaikan paket, jumlah orang, dan durasi camping.</p>
+                        <p>Total akan menyesuaikan paket, jumlah orang, dan durasi kunjungan.</p>
                     </div>
 
-                    <div class="ticket-summary-box" data-ticket-summary data-package-visit-price="{{ $ticketPackages['visit']['price'] }}" data-package-visit-name="{{ $ticketPackages['visit']['name'] }}" data-package-camping-price="{{ $ticketPackages['camping']['price'] }}" data-package-camping-name="{{ $ticketPackages['camping']['name'] }}">
+                    <div class="ticket-summary-box" data-ticket-summary>
                         <div class="ticket-summary-row">
                             <span>Paket</span>
-                            <strong data-summary-package>{{ $ticketPackages[old('package_type', 'visit')]['name'] }}</strong>
+                            <strong data-summary-package>{{ $ticketPackages[$selectedTicketId]['name'] ?? '-' }}</strong>
                         </div>
                         <div class="ticket-summary-row">
                             <span>Jumlah orang</span>
@@ -211,17 +218,17 @@
                         </div>
                         <div class="ticket-summary-row">
                             <span>Harga per orang</span>
-                            <strong>Rp <span data-summary-price>{{ number_format($ticketPackages[old('package_type', 'visit')]['price'], 0, ',', '.') }}</span></strong>
+                            <strong>Rp <span data-summary-price>{{ number_format($ticketPackages[$selectedTicketId]['price'] ?? 0, 0, ',', '.') }}</span></strong>
                         </div>
                         <div class="ticket-summary-row ticket-summary-row--total">
                             <span>Total bayar</span>
-                            <strong>Rp <span data-summary-total>{{ number_format($ticketPackages[old('package_type', 'visit')]['price'] * (int) old('visitor_count', 1), 0, ',', '.') }}</span></strong>
+                            <strong>Rp <span data-summary-total>{{ number_format(($ticketPackages[$selectedTicketId]['price'] ?? 0) * (int) old('visitor_count', 1), 0, ',', '.') }}</span></strong>
                         </div>
                     </div>
 
                     <div class="ticket-summary-note">
                         <h3>Catatan paket</h3>
-                        <p>Paket camping dihitung per orang per hari. Paket kunjungan biasa berlaku untuk satu hari kunjungan di area wisata Batu Kuda.</p>
+                        <p>Tanggal keluar dipakai untuk laporan kunjungan dan perhitungan durasi tiket.</p>
                     </div>
 
                     @if ($recentTicket)

@@ -109,7 +109,13 @@
         {{-- Masonry / Grid --}}
         <div class="photo-grid" id="photoGrid">
             @foreach($fotos as $foto)
-            <article class="photo-card fade-up" data-id="{{ $foto->id }}">
+            <article
+                class="photo-card fade-up"
+                data-id="{{ $foto->id }}"
+                data-title="{{ $foto->judul_foto }}"
+                data-description="{{ $foto->deskripsi ?? '' }}"
+                data-image-url="{{ $foto->image_url }}"
+            >
                 {{-- Gambar --}}
                 <div class="photo-card__img-wrap">
                     <img
@@ -156,6 +162,17 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                             <span>{{ $foto->komentars_count }}</span>
                         </button>
+
+                        @if($canUpload)
+                        <button class="action-btn action-btn--admin action-btn--edit" data-gallery-edit="{{ $foto->id }}" type="button" aria-label="Edit foto">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                            <span>Edit</span>
+                        </button>
+                        <button class="action-btn action-btn--admin action-btn--delete" data-gallery-delete="{{ $foto->id }}" type="button" aria-label="Hapus foto">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                            <span>Hapus</span>
+                        </button>
+                        @endif
 
                         {{-- Share --}}
                         <button class="action-btn action-btn--share" data-url="{{ route('gallery.show', $foto->id) }}" data-title="{{ $foto->judul_foto }}">
@@ -264,13 +281,13 @@
     <div class="upload-modal__backdrop" id="uploadClose"></div>
     <div class="upload-modal__panel">
         <div class="upload-modal__head">
-            <h2>Upload Foto Baru</h2>
+            <h2 id="uploadModalTitle">Upload Foto Baru</h2>
             <button class="upload-modal__close" id="uploadCloseBtn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
 
-        <form class="upload-form" id="uploadForm" enctype="multipart/form-data">
+        <form class="upload-form" id="uploadForm" enctype="multipart/form-data" data-mode="create">
             @csrf
             {{-- Drop zone --}}
             <div class="upload-dropzone" id="dropzone">
@@ -278,8 +295,8 @@
                     <div class="dropzone__icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     </div>
-                    <p class="dropzone__text">Seret foto ke sini atau <label for="fotoInput" class="dropzone__link">pilih file</label></p>
-                    <span class="dropzone__hint">PNG, JPG, WebP · Maks 5 MB</span>
+                    <p class="dropzone__text" id="dropzoneText">Seret foto ke sini atau <label for="fotoInput" class="dropzone__link">pilih file</label></p>
+                    <span class="dropzone__hint" id="dropzoneHint">PNG, JPG, WebP · Maks 5 MB</span>
                 </div>
                 <img src="" alt="" id="dropzonePreview" class="dropzone__preview" hidden>
                 <input type="file" id="fotoInput" name="gambar" accept="image/*" class="visually-hidden">
@@ -300,16 +317,19 @@
 
             <div id="uploadError" class="upload-error" hidden></div>
 
-            <button type="submit" class="btn-upload-submit" id="uploadSubmit">
-                <span class="btn-text">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    Upload Foto
-                </span>
-                <span class="btn-loading" hidden>
-                    <div class="spinner spinner--white"></div>
-                    Mengupload...
-                </span>
-            </button>
+            <div class="upload-actions">
+                <button type="button" class="btn-upload-cancel" id="uploadCancel">Batal</button>
+                <button type="submit" class="btn-upload-submit" id="uploadSubmit">
+                    <span class="btn-text">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <span id="uploadSubmitText">Upload Foto</span>
+                    </span>
+                    <span class="btn-loading" hidden>
+                        <div class="spinner spinner--white"></div>
+                        <span id="uploadLoadingText">Mengupload...</span>
+                    </span>
+                </button>
+            </div>
         </form>
     </div>
 </div>
@@ -335,6 +355,9 @@
                 komentar: '{{ route('gallery.komentar', '__id__') }}',
                 show: '{{ route('gallery.show', '__id__') }}',
                 store: '{{ route('gallery.store') }}',
+                update: '{{ route('gallery.update', '__id__') }}',
+                destroy: '{{ route('gallery.destroy', '__id__') }}',
+                image: '{{ route('gallery.image', '__path__') }}',
                 index: '{{ route('gallery.index') }}',
             }
         };

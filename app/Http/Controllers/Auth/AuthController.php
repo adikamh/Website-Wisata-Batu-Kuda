@@ -71,6 +71,8 @@ class AuthController
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'Phone' => ['nullable', 'string', 'max:20'],
             'Address' => ['nullable', 'string', 'max:255'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'password' => ['required', 'confirmed', Password::min(8)],
         ], [
             'username.regex' => 'Username hanya boleh mengandung huruf, angka, dan underscore.',
@@ -88,6 +90,8 @@ class AuthController
             'role' => 'user',
             'Phone' => $request->Phone,
             'Address' => $request->Address,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
             'is_verified' => false,
         ]);
 

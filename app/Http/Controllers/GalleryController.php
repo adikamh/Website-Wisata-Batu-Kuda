@@ -123,16 +123,54 @@ class GalleryController extends Controller
     }
 
     /**
+     * Update data foto dan opsional ganti gambar (hanya admin).
+     */
+    public function update(Request $request, Gallery $gallery)
+    {
+        $this->authorize_admin($request);
+
+        $validated = $request->validate([
+            'judul_foto' => 'required|string|max:120',
+            'deskripsi'  => 'nullable|string|max:500',
+            'gambar'     => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
+        ], [
+            'judul_foto.required' => 'Judul foto wajib diisi.',
+            'gambar.image'        => 'File yang diupload harus berupa gambar.',
+            'gambar.max'          => 'Ukuran foto maksimal 5 MB.',
+        ]);
+
+        $payload = [
+            'judul_foto' => $validated['judul_foto'],
+            'deskripsi'  => $validated['deskripsi'] ?? null,
+        ];
+
+        if ($request->hasFile('gambar')) {
+            $this->deleteLocalImage($gallery->gambar_url);
+            $payload['gambar_url'] = $request->file('gambar')->store('gallery', 'public');
+        }
+
+        $gallery->update($payload);
+        $gallery->refresh();
+
+        if ($request->expectsJson()) {
+            return Response::json([
+                'message' => 'Foto berhasil diperbarui.',
+                'gallery' => $gallery,
+            ]);
+        }
+
+        return Redirect::route('gallery.index')
+            ->with('status', 'Foto berhasil diperbarui.');
+    }
+
+    /**
      * Hapus foto (hanya admin / owner — sesuaikan policy).
      */
     public function destroy(Request $request, Gallery $gallery)
     {
         $this->authorize_admin($request);
 
-        // Hapus file upload lokal, biarkan URL eksternal dari data seed tetap aman.
-        if (! str_starts_with($gallery->gambar_url, 'http://') && ! str_starts_with($gallery->gambar_url, 'https://')) {
-            Storage::disk('public')->delete($gallery->gambar_url);
-        }
+        $this->deleteLocalImage($gallery->gambar_url);
 
         $gallery->delete();
 
@@ -301,5 +339,21 @@ class GalleryController extends Controller
     private function isAdmin(): bool
     {
         return Auth::check() && Auth::user()?->role === 'admin';
+    }
+
+    private function deleteLocalImage(?string $path): void
+    {
+        $path = ltrim(trim((string) $path), '/');
+
+        if (
+            $path === ''
+            || str_starts_with($path, 'http://')
+            || str_starts_with($path, 'https://')
+            || ! Storage::disk('public')->exists($path)
+        ) {
+            return;
+        }
+
+        Storage::disk('public')->delete($path);
     }
 }
