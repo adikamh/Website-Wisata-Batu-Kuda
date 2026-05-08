@@ -7,6 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const panelClose = document.getElementById('routePanelClose');
     const currentLocationButton = document.getElementById('routeUseCurrentLocation');
     const originLabelElement = document.getElementById('routeOriginLabel');
+    const originEditBtn = document.getElementById('routeOriginEditBtn');
+    const originInputContainer = document.getElementById('routeOriginInputContainer');
+    const originInput = document.getElementById('routeOriginInput');
+    const originConfirmBtn = document.getElementById('routeOriginConfirmBtn');
+    const originCancelBtn = document.getElementById('routeOriginCancelBtn');
     const statusElement = document.getElementById('routeStatus');
     const statusText = document.getElementById('routeStatusText');
     const tabsElement = document.getElementById('routeTabs');
@@ -77,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initPanelEvents();
     initLegendEvents();
     initCurrentLocationEvents();
+    initOriginEditEvents();
     bootstrapRoute();
 
     async function bootstrapRoute() {
@@ -745,6 +751,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initCurrentLocationEvents() {
         currentLocationButton?.addEventListener('click', requestCurrentLocation);
+    }
+
+    function initOriginEditEvents() {
+        originEditBtn?.addEventListener('click', showOriginInput);
+        originConfirmBtn?.addEventListener('click', handleOriginSearch);
+        originCancelBtn?.addEventListener('click', hideOriginInput);
+        originInput?.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                handleOriginSearch();
+            }
+        });
+    }
+
+    function showOriginInput() {
+        if (originInputContainer) {
+            originInputContainer.hidden = false;
+            originInput?.focus();
+            if (originLabelElement?.textContent) {
+                originInput.value = originLabelElement.textContent;
+            }
+        }
+    }
+
+    function hideOriginInput() {
+        if (originInputContainer) {
+            originInputContainer.hidden = true;
+            originInput.value = '';
+        }
+    }
+
+    async function handleOriginSearch() {
+        const searchAddress = (originInput?.value || '').trim();
+
+        if (! searchAddress) {
+            setStatus('Masukkan alamat lokasi awal', 'error');
+            return;
+        }
+
+        setStatus('Mencari lokasi: ' + searchAddress + '...', '');
+        originConfirmBtn.disabled = true;
+
+        try {
+            const coordinates = await geocodeAddress(searchAddress);
+            setOriginMarker(coordinates, searchAddress);
+            updateOriginLabel(searchAddress);
+            hideOriginInput();
+            fitMapToLayers(markers);
+            requestRoutes(coordinates);
+            setStatus('Lokasi berhasil diupdate. Menghitung rute baru...', 'success');
+        } catch (error) {
+            setStatus(error.message || 'Gagal mencari lokasi. Coba lagi dengan alamat yang berbeda.', 'error');
+        } finally {
+            originConfirmBtn.disabled = false;
+        }
     }
 
     function initLegendEvents() {
