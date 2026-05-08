@@ -27,7 +27,7 @@
             <li><a href="{{ route('gallery.index') }}" data-nav-link class="{{ request()->routeIs('gallery.*') ? 'is-active' : '' }}">Galeri</a></li>
             <li><a href="{{ $anchor('info') }}" data-nav-link data-section="info" class="{{ $isHome ? 'is-home-link' : '' }}">Info Wisata</a></li>
             <li><a href="{{ route('tiket') }}" data-nav-link class="{{ request()->routeIs('tiket') ? 'is-active' : '' }}">Tiket</a></li>
-            <li><a href="{{ $anchor('lokasi') }}" data-nav-link data-section="lokasi" class="{{ $isHome ? 'is-home-link' : '' }}">Lokasi</a></li>
+            <li><a href="{{ route('lokasi.index') }}" data-nav-link class="{{ request()->routeIs('lokasi.index') ? 'is-active' : '' }}">Lokasi</a></li>
         </ul>
 
         @if(Auth::check())

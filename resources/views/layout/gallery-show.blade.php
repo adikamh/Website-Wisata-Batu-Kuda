@@ -52,10 +52,24 @@
 
                 <div class="gallery-detail__comments" id="lbComments">
                     @forelse($gallery->komentars as $komentar)
-                        <div class="comment-item">
+                        @php($canDeleteKomentar = $canUpload || (int) $komentar->user_id === (int) Auth::id())
+                        <div class="comment-item" data-comment-id="{{ $komentar->id }}">
                             <div class="comment-avatar">{{ strtoupper(substr($komentar->user?->name ?? 'P', 0, 1)) }}</div>
                             <div class="comment-body">
-                                <div class="comment-name">{{ $komentar->user?->name ?? 'Pengguna' }}</div>
+                                <div class="comment-head">
+                                    <div class="comment-name">{{ $komentar->user?->name ?? 'Pengguna' }}</div>
+                                    @if($canDeleteKomentar)
+                                        <button class="comment-delete-btn" type="button" data-comment-delete="{{ $komentar->id }}" title="Hapus komentar" aria-label="Hapus komentar">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6l-1 14H6L5 6"></path>
+                                                <path d="M10 11v6"></path>
+                                                <path d="M14 11v6"></path>
+                                                <path d="M9 6V4h6v2"></path>
+                                            </svg>
+                                        </button>
+                                    @endif
+                                </div>
                                 <div class="comment-text">{{ $komentar->isi_komentar }}</div>
                                 <div class="comment-time">{{ $komentar->created_at->diffForHumans() }}</div>
                             </div>
@@ -105,6 +119,7 @@
             routes: {
                 like: '{{ route('gallery.like', '__id__') }}',
                 komentar: '{{ route('gallery.komentar', '__id__') }}',
+                komentarDestroy: '{{ route('gallery.komentar.destroy', '__id__') }}',
                 show: '{{ route('gallery.show', '__id__') }}',
                 store: '{{ route('gallery.store') }}',
                 index: '{{ route('gallery.index') }}',

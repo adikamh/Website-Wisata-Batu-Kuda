@@ -20,7 +20,7 @@ class WisataSeeder extends Seeder
                                . 'di lereng Gunung Manglayang, kawasan ini menawarkan udara segar, hamparan pohon '
                                . 'pinus yang rindang, serta jalur hiking yang cocok untuk semua kalangan.',
                 'lokasi'      => 'Desa Cikadut, Kecamatan Cimenyan, Kabupaten Bandung, Jawa Barat. '
-                               . 'Koordinat: -6.8567, 107.7178. Jarak ±25 km dari pusat Kota Bandung.',
+                               . 'Koordinat: -6.9037, 107.7471. Jarak ±25 km dari pusat Kota Bandung.',
                 'gambar_url'  => 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=900&q=80',
             ]
         );

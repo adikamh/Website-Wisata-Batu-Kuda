@@ -353,6 +353,7 @@
             routes: {
                 like: '{{ route('gallery.like', '__id__') }}',
                 komentar: '{{ route('gallery.komentar', '__id__') }}',
+                komentarDestroy: '{{ route('gallery.komentar.destroy', '__id__') }}',
                 show: '{{ route('gallery.show', '__id__') }}',
                 store: '{{ route('gallery.store') }}',
                 update: '{{ route('gallery.update', '__id__') }}',

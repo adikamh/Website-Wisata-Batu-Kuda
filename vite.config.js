@@ -13,6 +13,8 @@ export default defineConfig({
                 'resources/js/gallery.js',
                 'resources/css/tiket.css',
                 'resources/js/tiket.js',
+                'resources/css/lokasi.css',
+                'resources/js/lokasi.js',
                 'resources/js/auth.js',
                 'resources/js/validation.js',
                 'resources/js/chatbot.js',

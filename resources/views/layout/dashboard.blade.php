@@ -341,8 +341,8 @@
                 data-user-lat="{{ $mapUserLatitude }}"
                 data-user-lng="{{ $mapUserLongitude }}"
                 data-destination-name="Wisata Batu Kuda"
-                data-destination-lat="-6.8567"
-                data-destination-lng="107.7178"
+                data-destination-lat="-6.9037"
+                data-destination-lng="107.7471"
             ></div>
             <div class="map-route-status" id="mapRouteStatus">
                 {{ Auth::check() ? 'Memuat jalur dari lokasi akun...' : 'Menampilkan lokasi Batu Kuda.' }}
