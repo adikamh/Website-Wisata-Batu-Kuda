@@ -805,3 +805,121 @@
         max-height: min(480px, calc(100vh - 7.5rem));
     }
 }
+
+/* Origin Location Edit Styles */
+.route-origin-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.72);
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.route-origin-edit-btn:hover {
+    background: rgba(255, 255, 255, 0.24);
+    color: var(--white);
+}
+
+.route-origin-edit-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.route-origin-input-container {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.6rem;
+    align-items: center;
+}
+
+.route-origin-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--white);
+    font-size: 0.75rem;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.route-origin-input::placeholder {
+    color: rgba(255, 255, 255, 0.48);
+}
+
+.route-origin-input:focus {
+    border-color: var(--green-light);
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 0 0 2px rgba(116, 198, 157, 0.24);
+}
+
+.route-origin-input-actions {
+    display: flex;
+    gap: 0.45rem;
+}
+
+.route-origin-btn {
+    padding: 0.45rem 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+}
+
+.route-origin-btn:hover {
+    border-color: rgba(255, 255, 255, 0.32);
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--white);
+}
+
+.route-origin-btn--confirm {
+    background: var(--green-light);
+    border-color: var(--green-light);
+    color: #082014;
+}
+
+.route-origin-btn--confirm:hover {
+    background: var(--green-pale);
+    border-color: var(--green-pale);
+    color: #082014;
+}
+
+.route-origin-btn--cancel {
+    background: rgba(244, 63, 94, 0.15);
+    border-color: rgba(244, 63, 94, 0.32);
+    color: #fecaca;
+}
+
+.route-origin-btn--cancel:hover {
+    background: rgba(244, 63, 94, 0.25);
+    border-color: rgba(244, 63, 94, 0.45);
+    color: #fef2f2;
+}
+
+/* Adjust locate button position to prevent overlap with zoom controls */
+@media (min-width: 980px) {
+    .route-floating--locate {
+        bottom: 7.5rem;
+    }
+}

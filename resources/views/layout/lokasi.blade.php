@@ -34,11 +34,34 @@
                     <span>
                         <strong>Dari</strong>
                         <span id="routeOriginLabel">{{ $mapData['origin']['address'] ?: ($mapData['origin']['name'] ?: 'Lokasi akun') }}</span>
+                        <button class="route-origin-edit-btn" id="routeOriginEditBtn" type="button" title="Edit lokasi awal" aria-label="Edit lokasi awal">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M3 17.25V21h3.75L17.81 9.94m-6.75-6.75a2.121 2.121 0 113 3L9.06 3.06a2.121 2.121 0 00-3 3L11.06 3.06z"/>
+                            </svg>
+                        </button>
                     </span>
                     <span>
                         <strong>Ke</strong>
                         {{ $mapData['destination']['name'] }}
                     </span>
+                </div>
+
+                <div class="route-origin-input-container" id="routeOriginInputContainer" hidden>
+                    <input 
+                        type="text" 
+                        id="routeOriginInput" 
+                        class="route-origin-input"
+                        placeholder="Masukkan alamat atau lokasi Anda"
+                        aria-label="Masukkan alamat lokasi awal"
+                    >
+                    <div class="route-origin-input-actions">
+                        <button type="button" class="route-origin-btn route-origin-btn--confirm" id="routeOriginConfirmBtn">
+                            Cari
+                        </button>
+                        <button type="button" class="route-origin-btn route-origin-btn--cancel" id="routeOriginCancelBtn">
+                            Batal
+                        </button>
+                    </div>
                 </div>
             </div>
 
