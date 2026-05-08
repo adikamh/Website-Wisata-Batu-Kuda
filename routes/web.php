@@ -7,6 +7,7 @@ use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\LocationController;
 
 Route::get('/', [WisataController::class, 'dashboard'])->name('home');
 Route::get('/gallery-file/{path}', function (string $path) {
@@ -31,7 +32,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/gallery/{gallery}/komentar', [GalleryController::class, 'getKomentar'])->name('gallery.komentar');
     Route::post('/gallery/{gallery}/komentar', [GalleryController::class, 'storeKomentar'])->name('gallery.komentar.store');
     Route::delete('/gallery/komentar/{komentar}', [GalleryController::class, 'destroyKomentar'])->name('gallery.komentar.destroy');
+
+    Route::get('/lokasi', [LocationController::class, 'index'])->name('lokasi.index');
 });
+
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');

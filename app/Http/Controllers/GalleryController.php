@@ -50,7 +50,6 @@ class GalleryController extends Controller
 
         $fotos = $query->paginate(12)->withQueryString();
 
-        // Statistik header
         $totalFoto     = Gallery::count();
         $totalLike     = LikeFoto::count();
         $totalKomentar = Komentar::count();
@@ -95,12 +94,12 @@ class GalleryController extends Controller
         $validated = $request->validate([
             'judul_foto' => 'required|string|max:120',
             'deskripsi'  => 'nullable|string|max:500',
-            'gambar'     => 'required|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB
+            'gambar'     => 'required|image|mimes:jpeg,jpg,png,webp,heic,heif|max:16384', //16mb
         ], [
             'judul_foto.required' => 'Judul foto wajib diisi.',
             'gambar.required'     => 'Pilih foto terlebih dahulu.',
             'gambar.image'        => 'File yang diupload harus berupa gambar.',
-            'gambar.max'          => 'Ukuran foto maksimal 5 MB.',
+            'gambar.max'          => 'Ukuran foto maksimal 16 MB.',
         ]);
 
         // Simpan file ke storage/app/public/gallery

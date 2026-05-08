@@ -724,10 +724,45 @@
     justify-content: center;
     flex-shrink: 0;
 }
-.comment-body { flex: 1; }
-.comment-name { font-size: 0.82rem; font-weight: 700; color: var(--text-dark); margin-bottom: 2px; }
+.comment-body { flex: 1; min-width: 0; }
+.comment-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 2px;
+}
+.comment-name { font-size: 0.82rem; font-weight: 700; color: var(--text-dark); }
 .comment-text { font-size: 0.84rem; color: var(--text-mid); line-height: 1.6; }
 .comment-time { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+.comment-delete-btn {
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(224,82,82,0.08);
+    color: #c0392b;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+.comment-delete-btn:hover {
+    background: rgba(224,82,82,0.16);
+    color: #a93226;
+    transform: translateY(-1px);
+}
+.comment-delete-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
+}
+.comment-delete-btn svg {
+    width: 14px;
+    height: 14px;
+}
 
 .lb-comments-loading {
     display: flex;

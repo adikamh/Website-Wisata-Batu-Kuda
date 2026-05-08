@@ -142,16 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lbComments.innerHTML = '<p class="comments-empty">Belum ada komentar. Jadilah yang pertama!</p>';
             return;
         }
-        lbComments.innerHTML = list.map(k => `
-            <div class="comment-item">
-                <div class="comment-avatar">${escHtml(k.user?.name?.charAt(0).toUpperCase() || '?')}</div>
-                <div class="comment-body">
-                    <div class="comment-name">${escHtml(k.user?.name || 'Pengguna')}</div>
-                    <div class="comment-text">${escHtml(k.isi_komentar)}</div>
-                    <div class="comment-time">${formatTime(k.created_at)}</div>
-                </div>
-            </div>
-        `).join('');
+        lbComments.innerHTML = list.map(commentItemHtml).join('');
     };
 
     const appendKomentar = (k) => {
@@ -160,17 +151,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const div = document.createElement('div');
         div.className = 'comment-item';
-        div.innerHTML = `
-            <div class="comment-avatar">${escHtml(k.user?.name?.charAt(0).toUpperCase() || '?')}</div>
-            <div class="comment-body">
-                <div class="comment-name">${escHtml(k.user?.name || 'Pengguna')}</div>
-                <div class="comment-text">${escHtml(k.isi_komentar)}</div>
-                <div class="comment-time">Baru saja</div>
-            </div>
-        `;
+        div.dataset.commentId = k.id;
+        div.innerHTML = commentItemInnerHtml(k, 'Baru saja');
         lbComments?.appendChild(div);
         div.scrollIntoView({ behavior: 'smooth' });
     };
+
+    const canDeleteKomentar = (komentar) => {
+        const ownerId = Number(komentar.user?.id ?? komentar.user_id ?? 0);
+        const currentUserId = Number(CFG.userId ?? 0);
+
+        return Boolean(CFG.canUpload) || (ownerId > 0 && ownerId === currentUserId);
+    };
+
+    const deleteKomentarButtonHtml = (komentar) => {
+        if (!komentar.id || !canDeleteKomentar(komentar)) {
+            return '';
+        }
+
+        return `
+            <button class="comment-delete-btn" type="button" data-comment-delete="${komentar.id}" title="Hapus komentar" aria-label="Hapus komentar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6l-1 14H6L5 6"></path>
+                    <path d="M10 11v6"></path>
+                    <path d="M14 11v6"></path>
+                    <path d="M9 6V4h6v2"></path>
+                </svg>
+            </button>
+        `;
+    };
+
+    const commentItemInnerHtml = (komentar, timeLabel = null) => `
+        <div class="comment-avatar">${escHtml(komentar.user?.name?.charAt(0).toUpperCase() || '?')}</div>
+        <div class="comment-body">
+            <div class="comment-head">
+                <div class="comment-name">${escHtml(komentar.user?.name || 'Pengguna')}</div>
+                ${deleteKomentarButtonHtml(komentar)}
+            </div>
+            <div class="comment-text">${escHtml(komentar.isi_komentar)}</div>
+            <div class="comment-time">${escHtml(timeLabel || formatTime(komentar.created_at))}</div>
+        </div>
+    `;
+
+    const commentItemHtml = (komentar) => `
+        <div class="comment-item" data-comment-id="${komentar.id}">
+            ${commentItemInnerHtml(komentar)}
+        </div>
+    `;
 
     /* Prev / Next */
     const updateNavBtns = () => {
@@ -294,16 +322,72 @@ document.addEventListener('DOMContentLoaded', () => {
             appendKomentar(data.komentar || data);
             lbKomentar.value = '';
 
-            // Update counter di card
-            const card = $(`.photo-card[data-id="${id}"]`);
-            const commentSpan = card?.querySelector('.action-btn--comment span');
-            if (commentSpan) commentSpan.textContent = parseInt(commentSpan.textContent || 0) + 1;
-            if (lbCommentCount) lbCommentCount.textContent = parseInt(lbCommentCount.textContent || 0) + 1;
+            updateKomentarCount(id, 1);
 
         } catch (err) {
             toast('Gagal: ' + err.message);
         } finally {
             if (sendBtn) sendBtn.disabled = false;
+        }
+    });
+
+    document.addEventListener('click', async e => {
+        const deleteBtn = e.target.closest('[data-comment-delete]');
+
+        if (!deleteBtn) {
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const komentarId = deleteBtn.dataset.commentDelete;
+        const galleryId = lbGalleryId?.value;
+
+        if (!komentarId || !ROUTES.komentarDestroy) {
+            showAlertToast('Route hapus komentar belum tersedia.', 'error');
+            return;
+        }
+
+        const result = await confirmAlert({
+            title: 'Hapus komentar?',
+            text: 'Komentar yang dihapus tidak bisa dikembalikan.',
+            icon: 'warning',
+            confirmButtonText: 'Ya, hapus',
+            cancelButtonText: 'Batal',
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        deleteBtn.disabled = true;
+
+        try {
+            const res = await fetch(url(ROUTES.komentarDestroy, komentarId), {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(data.message || 'Komentar gagal dihapus.');
+            }
+
+            deleteBtn.closest('.comment-item')?.remove();
+
+            if (galleryId) {
+                updateKomentarCount(galleryId, -1);
+            }
+
+            if (lbComments && !lbComments.querySelector('.comment-item')) {
+                lbComments.innerHTML = '<p class="comments-empty">Belum ada komentar. Jadilah yang pertama!</p>';
+            }
+
+            showAlertToast(data.message || 'Komentar berhasil dihapus.');
+        } catch (err) {
+            deleteBtn.disabled = false;
+            showAlertToast('Gagal: ' + err.message, 'error');
         }
     });
 
@@ -714,6 +798,42 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ══════════════════════════════════════
        UTILS
     ══════════════════════════════════════ */
+    function updateKomentarCount(galleryId, delta) {
+        const currentLightboxCount = parseInt(lbCommentCount?.textContent || '0', 10) || 0;
+        const nextLightboxCount = Math.max(0, currentLightboxCount + delta);
+
+        if (lbCommentCount) {
+            lbCommentCount.textContent = String(nextLightboxCount);
+        }
+
+        const card = $(`.photo-card[data-id="${galleryId}"]`);
+        const commentSpan = card?.querySelector('.action-btn--comment span');
+
+        if (commentSpan) {
+            const currentCardCount = parseInt(commentSpan.textContent || '0', 10) || 0;
+            commentSpan.textContent = String(Math.max(0, currentCardCount + delta));
+        }
+    }
+
+    function confirmAlert(options) {
+        if (window.BatuKudaAlert?.confirm) {
+            return window.BatuKudaAlert.confirm(options);
+        }
+
+        return Promise.resolve({
+            isConfirmed: window.confirm(options.text || options.title || 'Lanjutkan aksi ini?'),
+        });
+    }
+
+    function showAlertToast(message, icon = 'success') {
+        if (window.BatuKudaAlert?.toast) {
+            window.BatuKudaAlert.toast(message, icon);
+            return;
+        }
+
+        toast(message);
+    }
+
     function escHtml(str) {
         if (!str) return '';
         return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
