@@ -20,6 +20,8 @@ export default defineConfig({
                 'resources/js/chatbot.js',
                 'resources/images/icons/Baku.png',
                 'resources/css/chatbot.css',
+                'resources/js/infowisata.js',
+                'resources/css/infowisata.css',
             ],
             refresh: true,
         }),
