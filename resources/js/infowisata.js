@@ -1,8 +1,5 @@
-// ─── info-wisata.js ────────────────────────────────────────
-
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ── 1. Navbar scroll ───────────────────────────────────
     const navbar = document.getElementById('navbar');
     const tabs   = document.getElementById('iwTabs');
 
@@ -12,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tabs?.classList.toggle('shadowed', sy > 200);
     }, { passive: true });
 
-    // ── 2. Reveal on scroll ────────────────────────────────
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -24,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-    // ── 3. Category filter tabs ────────────────────────────
     document.querySelectorAll('.iw-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.iw-tab').forEach(t => t.classList.remove('active'));
@@ -43,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ── 4. Dropdown user menu ──────────────────────────────
     const userBtn  = document.getElementById('userMenuBtn');
     const dropdown = document.getElementById('userDropdown');
     if (userBtn && dropdown) {
@@ -59,11 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ── 5. Flash auto-dismiss ──────────────────────────────
     const flash = document.getElementById('flashMsg');
     if (flash) setTimeout(() => flash?.remove(), 5000);
 
-    // ── 6. Textarea char count ─────────────────────────────
     const descTA = document.getElementById('fDeskripsi');
     const descCt = document.getElementById('descCount');
     if (descTA && descCt) {
@@ -75,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ─── Modal: Create / Edit Seksi ────────────────────────────
 window.openModal = function(mode, sectionId = null) {
     const overlay  = document.getElementById('modalOverlay');
     const modal    = document.getElementById('sectionModal');
@@ -87,12 +78,11 @@ window.openModal = function(mode, sectionId = null) {
     const sub      = document.getElementById('modalSub');
     const saveText = document.getElementById('saveBtnText');
 
-    // Hide poin modal
     if (poinM) poinM.style.display = 'none';
     modal.style.display = '';
 
     if (mode === 'create') {
-        form.action     = '/info-wisata';
+        form.action     = '/infowisata';
         methSpan.innerHTML = '';
         title.textContent  = 'Tambah Seksi Info';
         icon.textContent   = '✨';
@@ -101,18 +91,16 @@ window.openModal = function(mode, sectionId = null) {
         form.reset();
         document.getElementById('descCount').textContent = '0';
     } else {
-        // Edit: fetch existing data dari section di DOM
         const sec = document.querySelector(`.iw-section[data-id="${sectionId}"]`);
         if (!sec) return;
 
-        form.action       = `/info-wisata/${sectionId}`;
+        form.action       = `/infowisata/${sectionId}`;
         methSpan.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
         title.textContent  = 'Edit Seksi Info';
         icon.textContent   = '✏️';
         sub.textContent    = 'Perbarui konten informasi';
         saveText.textContent = 'Simpan Perubahan';
 
-        // Populate fields from DOM
         const kat   = sec.querySelector('.iw-sec-kat')?.textContent?.trim() || '';
         const ico   = sec.querySelector('.iw-sec-icon')?.textContent?.trim() || '';
         const jdl   = sec.querySelector('.iw-sec-title')?.textContent?.trim() || '';
@@ -129,26 +117,25 @@ window.openModal = function(mode, sectionId = null) {
     document.body.style.overflow = 'hidden';
 };
 
-// ─── Modal: Create / Edit Poin ──────────────────────────────
 window.openPoinModal = function(mode, sectionId, poinIndex = null, poinData = null) {
     const overlay    = document.getElementById('modalOverlay');
     const sectionM   = document.getElementById('sectionModal');
     const poinModal  = document.getElementById('poinModal');
     const form       = document.getElementById('poinForm');
-    const methSpan   = document.getElementById('poinMethodField');
+    const methodField = document.getElementById('poinMethodField');
     const titleEl    = document.getElementById('poinModalTitle');
 
     sectionM.style.display = 'none';
     poinModal.style.display = '';
 
     if (mode === 'create') {
-        form.action        = `/info-wisata/${sectionId}/poin`;
-        methSpan.innerHTML = '';
+        form.action = `/infowisata/${sectionId}/poin`;
+        methodField.value = '';
         titleEl.textContent = 'Tambah Poin';
         form.reset();
     } else {
-        form.action        = `/info-wisata/${sectionId}/poin/${poinIndex}`;
-        methSpan.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
+        form.action = `/infowisata/${sectionId}/poin/${poinIndex}`;
+        methodField.value = 'PUT';
         titleEl.textContent = 'Edit Poin';
         document.getElementById('fPoinJudul').value = poinData?.judul || '';
         document.getElementById('fPoinIsi').value   = poinData?.isi   || '';
@@ -158,13 +145,11 @@ window.openPoinModal = function(mode, sectionId, poinIndex = null, poinData = nu
     document.body.style.overflow = 'hidden';
 };
 
-// ─── Close all modals ───────────────────────────────────────
 window.closeAllModals = function() {
     document.getElementById('modalOverlay')?.classList.remove('active');
     document.body.style.overflow = '';
 };
 
-// ─── Delete confirm ─────────────────────────────────────────
 window.confirmDelete = function(btn) {
     const form    = btn.closest('form');
     const overlay = document.getElementById('confirmOverlay');
@@ -177,12 +162,10 @@ window.confirmDelete = function(btn) {
     };
 };
 
-// Close confirm on overlay click
 document.getElementById('confirmOverlay')?.addEventListener('click', function(e) {
     if (e.target === this) this.classList.remove('active');
 });
 
-// ESC to close
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
         closeAllModals();

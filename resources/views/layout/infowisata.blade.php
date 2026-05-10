@@ -10,7 +10,6 @@
 
 @section('content')
 
-{{-- ══ HERO ══ --}}
 <header class="iw-hero">
     <div class="iw-hero-bg"></div>
     <div class="iw-hero-grain"></div>
@@ -43,7 +42,6 @@
     </div>
 </header>
 
-{{-- ══ FLASH ══ --}}
 @if(session('success'))
 <div class="iw-flash success" id="flashMsg">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
@@ -59,7 +57,6 @@
 </div>
 @endif
 
-{{-- ══ CATEGORY TABS ══ --}}
 <div class="iw-tabs-wrap" id="iwTabs">
     <div class="iw-tabs">
         <button class="iw-tab active" data-filter="all">Semua</button>
@@ -69,7 +66,6 @@
     </div>
 </div>
 
-{{-- ══ SECTIONS ══ --}}
 <div class="iw-main">
     <div class="iw-container">
 
@@ -204,12 +200,10 @@
     </div>
 </div>
 
-{{-- ══ MODALS — admin only ══ --}}
 @auth @if(auth()->user()->role === 'admin')
 
 <div class="iw-modal-overlay" id="modalOverlay" onclick="closeAllModals()">
 
-    {{-- Modal Seksi --}}
     <div class="iw-modal" id="sectionModal" onclick="event.stopPropagation()">
         <button class="iw-modal-close" onclick="closeAllModals()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -265,7 +259,6 @@
         </form>
     </div>
 
-    {{-- Modal Poin --}}
     <div class="iw-modal" id="poinModal" style="display:none;" onclick="event.stopPropagation()">
         <button class="iw-modal-close" onclick="closeAllModals()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -277,7 +270,7 @@
         </div>
         <form id="poinForm" method="POST" class="iw-modal-form">
             @csrf
-            <span id="poinMethodField"></span>
+            <input type="hidden" name="_method" id="poinMethodField" value="">
             <div class="iw-field">
                 <label>Judul Poin <span class="opt">(opsional)</span></label>
                 <input type="text" name="judul" id="fPoinJudul" placeholder="Contoh: Gunakan Sepatu Gunung..." class="iw-input">
@@ -298,7 +291,6 @@
 
 </div>
 
-{{-- Delete Confirm --}}
 <div class="iw-confirm-overlay" id="confirmOverlay">
     <div class="iw-confirm">
         <div class="iw-confirm-icon">🗑️</div>
