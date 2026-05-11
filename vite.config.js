@@ -8,6 +8,8 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
+                'resources/css/admin-dashboard.css',
+                'resources/js/admin-dashboard.js',
                 'resources/js/sweet-alert.js',
                 'resources/css/gallery.css',
                 'resources/js/gallery.js',
