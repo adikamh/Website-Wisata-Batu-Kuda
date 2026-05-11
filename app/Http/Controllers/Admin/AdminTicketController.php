@@ -5,12 +5,108 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\TiketKategori;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Models\Wisata;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class AdminTicketController extends Controller
 {
+    public function dashboard()
+    {
+        $this->authorizeAdmin();
+
+        $chartTransactions = Transaction::query()
+            ->select(['created_at', 'total_bayar'])
+            ->where('status_pembayaran', 'success')
+            ->whereDate('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->orderBy('created_at')
+            ->get();
+
+        $chartLabels = collect(range(6, 0))
+            ->map(fn (int $daysAgo) => now()->subDays($daysAgo)->locale('id')->translatedFormat('D'))
+            ->values();
+
+        $chartData = collect(range(6, 0))
+            ->map(function (int $daysAgo) use ($chartTransactions) {
+                $date = now()->subDays($daysAgo)->toDateString();
+
+                return (float) $chartTransactions
+                    ->filter(fn (Transaction $transaction) => $transaction->created_at->toDateString() === $date)
+                    ->sum('total_bayar');
+            })
+            ->values();
+
+        $recentActivities = collect()
+            ->merge(
+                User::query()
+                    ->latest()
+                    ->limit(3)
+                    ->get()
+                    ->map(fn (User $user) => [
+                        'type' => 'user',
+                        'icon' => 'fa-user-plus',
+                        'icon_bg' => 'bg-green-100',
+                        'icon_text' => 'text-green-600',
+                        'title' => $user->name,
+                        'description' => 'Pengguna baru terdaftar',
+                        'time' => $user->created_at,
+                    ])
+            )
+            ->merge(
+                Transaction::query()
+                    ->with(['user', 'details'])
+                    ->latest()
+                    ->limit(3)
+                    ->get()
+                    ->map(fn (Transaction $transaction) => [
+                        'type' => 'transaction',
+                        'icon' => 'fa-ticket-alt',
+                        'icon_bg' => 'bg-indigo-100',
+                        'icon_text' => 'text-indigo-600',
+                        'title' => $transaction->user->name ?? 'Pengguna',
+                        'description' => 'Pembelian tiket ' . ($transaction->details->sum('quantity') ?: 0) . ' item',
+                        'time' => $transaction->created_at,
+                    ])
+            )
+            ->sortByDesc('time')
+            ->take(5)
+            ->values();
+
+        $stats = [
+            'total_users' => User::count(),
+            'today_revenue' => (float) Transaction::query()
+                ->where('status_pembayaran', 'success')
+                ->whereDate('created_at', today())
+                ->sum('total_bayar'),
+            'tickets_sold' => (int) Transaction::query()
+                ->with('details')
+                ->where('status_pembayaran', 'success')
+                ->get()
+                ->sum(fn (Transaction $transaction) => $transaction->details->sum('quantity')),
+            'camping_orders' => Transaction::query()
+                ->whereHas('details', fn ($query) => $query->where('package_type', 'camping'))
+                ->count(),
+        ];
+
+        return view('Admin.dashboard', compact('stats', 'chartLabels', 'chartData', 'recentActivities'));
+    }
+
+    public function users()
+    {
+        $this->authorizeAdmin();
+
+        $users = User::query()
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('Admin.users.index', compact('users'));
+    }
+
     public function index()
     {
         $this->authorizeAdmin();
@@ -25,10 +121,7 @@ class AdminTicketController extends Controller
             ->limit(20)
             ->get();
 
-        return view()->file(
-            resource_path('views/Admin/admin.dashboard.blade.php'),
-            compact('tickets', 'transactions')
-        );
+        return view('Admin.tickets.index', compact('tickets', 'transactions'));
     }
 
     public function store(Request $request)
@@ -45,6 +138,54 @@ class AdminTicketController extends Controller
         ]);
 
         return $this->redirectToTickets('Tiket berhasil ditambahkan.');
+    }
+
+    public function storeUser(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $validated = $this->validateUser($request);
+
+        User::create([
+            ...$validated,
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return redirect()
+            ->route('admin.users')
+            ->with('status', 'Pengguna berhasil ditambahkan.');
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        $this->authorizeAdmin();
+
+        $validated = $this->validateUser($request, $user);
+
+        if (blank($validated['password'] ?? null)) {
+            unset($validated['password']);
+        } else {
+            $validated['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($validated);
+
+        return redirect()
+            ->route('admin.users')
+            ->with('status', 'Pengguna berhasil diperbarui.');
+    }
+
+    public function destroyUser(User $user)
+    {
+        $this->authorizeAdmin();
+
+        abort_if(Auth::id() === $user->id, 422, 'Akun admin yang sedang login tidak bisa dihapus.');
+
+        $user->delete();
+
+        return redirect()
+            ->route('admin.users')
+            ->with('status', 'Pengguna berhasil dihapus.');
     }
 
     public function update(Request $request, TiketKategori $ticket)
@@ -128,6 +269,41 @@ class AdminTicketController extends Controller
         ]);
     }
 
+    private function validateUser(Request $request, ?User $user = null): array
+    {
+        $passwordRules = $user
+            ? ['nullable', 'confirmed', Password::min(8)]
+            : ['required', 'confirmed', Password::min(8)];
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'username' => [
+                'required',
+                'string',
+                'max:50',
+                'regex:/^[a-zA-Z0-9_]+$/',
+                Rule::unique('users', 'username')->ignore($user?->id),
+            ],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user?->id)],
+            'role' => ['required', Rule::in(['admin', 'user', 'moderator'])],
+            'Phone' => ['nullable', 'string', 'max:20'],
+            'Address' => ['nullable', 'string', 'max:255'],
+            'is_verified' => ['nullable', 'boolean'],
+            'password' => $passwordRules,
+        ], [
+            'username.regex' => 'Username hanya boleh mengandung huruf, angka, dan underscore.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'password.min' => 'Password minimal 8 karakter.',
+        ], [
+            'Phone' => 'nomor telepon',
+            'Address' => 'alamat',
+        ]);
+
+        $validated['is_verified'] = $request->boolean('is_verified');
+
+        return $validated;
+    }
+
     private function reportTransactions()
     {
         return Transaction::query()
@@ -191,7 +367,7 @@ class AdminTicketController extends Controller
     private function redirectToTickets(string $message)
     {
         return redirect()
-            ->to(route('admin.dashboard') . '#tiket')
+            ->route('admin.tickets')
             ->with('status', $message);
     }
 
