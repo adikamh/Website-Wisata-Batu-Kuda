@@ -64,7 +64,12 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', [AdminTicketController::class, 'index'])->name('admin.dashboard');
+    Route::get('/dashboard', [AdminTicketController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/pengguna', [AdminTicketController::class, 'users'])->name('admin.users');
+    Route::post('/pengguna', [AdminTicketController::class, 'storeUser'])->name('admin.users.store');
+    Route::put('/pengguna/{user}', [AdminTicketController::class, 'updateUser'])->name('admin.users.update');
+    Route::delete('/pengguna/{user}', [AdminTicketController::class, 'destroyUser'])->name('admin.users.destroy');
+    Route::get('/tiket', [AdminTicketController::class, 'index'])->name('admin.tickets');
     Route::post('/tickets', [AdminTicketController::class, 'store'])->name('admin.tickets.store');
     Route::put('/tickets/{ticket}', [AdminTicketController::class, 'update'])->name('admin.tickets.update');
     Route::delete('/tickets/{ticket}', [AdminTicketController::class, 'destroy'])->name('admin.tickets.destroy');
