@@ -22,6 +22,9 @@ Route::get('/gallery-file/{path}', function (string $path) {
 })->where('path', '.*')->name('gallery.image');
 
 Route::get('/infowisata', [InfoWisataController::class, 'index'])->name('infowisata.index');
+Route::get('/gallery',[GalleryController::class,'index'])->name('gallery.index');
+Route::get('/gallery/{gallery}',[GalleryController::class,'show'])->name('gallery.show');
+Route::get('/gallery/{gallery}/komentar',[GalleryController::class,'getKomentar'])->name('gallery.komentar');
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -44,13 +47,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/tiket', [WisataController::class, 'tiket'])->name('tiket');
     Route::post('/tiket', [WisataController::class, 'storeTiket'])->name('tiket.store');
-    Route::get('/gallery',[GalleryController::class,'index'])->name('gallery.index');
     Route::post('/gallery',[GalleryController::class,'store'])->name('gallery.store');
-    Route::get('/gallery/{gallery}',[GalleryController::class,'show'])->name('gallery.show');
     Route::put('/gallery/{gallery}',[GalleryController::class,'update'])->name('gallery.update');
     Route::delete('/gallery/{gallery}',[GalleryController::class,'destroy'])->name('gallery.destroy');
     Route::post('/gallery/{gallery}/like',[GalleryController::class,'like'])->name('gallery.like');
-    Route::get('/gallery/{gallery}/komentar',[GalleryController::class,'getKomentar'])->name('gallery.komentar');
     Route::post('/gallery/{gallery}/komentar',[GalleryController::class,'storeKomentar'])->name('gallery.komentar.store');
     Route::delete('/gallery/komentar/{komentar}',[GalleryController::class,'destroyKomentar'])->name('gallery.komentar.destroy');
     Route::get('/lokasi', [LocationController::class,'index'])->name('lokasi.index');
