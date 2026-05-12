@@ -5,7 +5,7 @@
 
 @section('admin_content')
     <div class="overflow-hidden rounded-xl bg-white shadow-sm">
-        <div class="flex flex-col gap-3 border-b bg-gray-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="border-b bg-gray-50 px-6 py-4">
             <div>
                 <h2 class="text-lg font-bold text-gray-700">
                     <i class="fas fa-table-list mr-2 text-indigo-500"></i>
@@ -13,6 +13,30 @@
                 </h2>
                 <p class="mt-1 text-sm text-gray-500">Kelola akun pengguna dari satu halaman yang lebih fokus.</p>
             </div>
+        </div>
+
+        <div class="user-action-bar" aria-label="Filter dan pencarian pengguna">
+            <div class="user-filter-wrap">
+                <select id="userRoleFilter" class="user-role-filter" aria-label="Filter role pengguna">
+                    <option value="all">Semua Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="user">User</option>
+                </select>
+                <i class="fas fa-chevron-down user-select-icon" aria-hidden="true"></i>
+            </div>
+
+            <div class="user-search-wrap">
+                <i class="fas fa-search user-search-icon" aria-hidden="true"></i>
+                <input
+                    type="search"
+                    id="userSearchInput"
+                    class="user-search-input"
+                    placeholder="Search User..."
+                    aria-label="Cari pengguna"
+                    autocomplete="off"
+                >
+            </div>
+
             <button type="button" data-modal-open="createUserModal" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
                 <i class="fas fa-plus mr-1"></i> Tambah Pengguna
             </button>
@@ -33,7 +57,13 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 bg-white">
                     @forelse ($users as $user)
-                        <tr class="transition hover:bg-gray-50">
+                        <tr
+                            class="user-table-row transition hover:bg-gray-50"
+                            data-user-name="{{ \Illuminate\Support\Str::lower($user->name) }}"
+                            data-user-username="{{ \Illuminate\Support\Str::lower($user->username) }}"
+                            data-user-email="{{ \Illuminate\Support\Str::lower($user->email) }}"
+                            data-user-role="{{ \Illuminate\Support\Str::lower($user->role) }}"
+                        >
                             <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">#USR-{{ str_pad($user->id, 4, '0', STR_PAD_LEFT) }}</td>
                             <td class="px-6 py-4">
                                 <div class="font-semibold text-gray-800">{{ $user->name }}</div>
@@ -75,6 +105,9 @@
                             <td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500">Belum ada data pengguna.</td>
                         </tr>
                     @endforelse
+                    <tr id="userFilterEmpty" class="hidden">
+                        <td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500">Tidak ada pengguna yang cocok dengan filter.</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -156,6 +189,46 @@
             if (modalFromValidation) {
                 openModal(modalFromValidation);
             }
+
+            const roleFilter = document.getElementById('userRoleFilter');
+            const searchInput = document.getElementById('userSearchInput');
+            const rows = document.querySelectorAll('.user-table-row');
+            const emptyState = document.getElementById('userFilterEmpty');
+
+            function normalize(value) {
+                return String(value || '').toLowerCase().trim();
+            }
+
+            function applyUserFilters() {
+                const selectedRole = roleFilter ? roleFilter.value : 'all';
+                const keyword = normalize(searchInput ? searchInput.value : '');
+                let visibleRows = 0;
+
+                rows.forEach(function (row) {
+                    const roleMatches = selectedRole === 'all' || row.dataset.userRole === selectedRole;
+                    const haystack = [
+                        row.dataset.userName,
+                        row.dataset.userUsername,
+                        row.dataset.userEmail,
+                    ].join(' ');
+                    const searchMatches = !keyword || haystack.includes(keyword);
+                    const isVisible = roleMatches && searchMatches;
+
+                    row.classList.toggle('hidden', !isVisible);
+
+                    if (isVisible) {
+                        visibleRows += 1;
+                    }
+                });
+
+                if (emptyState) {
+                    emptyState.classList.toggle('hidden', visibleRows > 0 || rows.length === 0);
+                }
+            }
+
+            roleFilter?.addEventListener('change', applyUserFilters);
+            searchInput?.addEventListener('input', applyUserFilters);
+            applyUserFilters();
         });
     </script>
 @endpush
