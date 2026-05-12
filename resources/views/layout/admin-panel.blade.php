@@ -6,17 +6,19 @@
 
         <div id="adminSidebarOverlay" class="admin-sidebar-overlay hidden" aria-hidden="true"></div>
 
+        <button
+            type="button"
+            id="sidebarToggle"
+            class="sidebar-edge-toggle"
+            aria-label="Toggle sidebar"
+            aria-expanded="true"
+        >
+            <span class="sidebar-edge-icon" aria-hidden="true">◀</span>
+        </button>
+
         <div id="adminMain" class="main-content">
             <header class="sticky top-0 z-30 flex items-center justify-between gap-4 border-b bg-white px-4 py-4 shadow-sm sm:px-6 lg:px-8">
                 <div class="flex items-center gap-3">
-                    <button
-                        type="button"
-                        id="sidebarToggle"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition-smooth hover:bg-gray-100 hover:text-gray-900"
-                        aria-label="Toggle sidebar"
-                    >
-                        <i class="fas fa-bars text-base"></i>
-                    </button>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Admin Panel</p>
                         <h1 class="text-xl font-bold text-gray-800 sm:text-2xl">@yield('page_title', 'Dashboard')</h1>

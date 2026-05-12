@@ -58,7 +58,7 @@ class AdminTicketController extends Controller
             )
             ->merge(
                 Transaction::query()
-                    ->with(['user', 'details'])
+                    ->with(['user', 'details', 'rentalItems'])
                     ->latest()
                     ->limit(3)
                     ->get()
@@ -68,7 +68,8 @@ class AdminTicketController extends Controller
                         'icon_bg' => 'bg-indigo-100',
                         'icon_text' => 'text-indigo-600',
                         'title' => $transaction->user->name ?? 'Pengguna',
-                        'description' => 'Pembelian tiket ' . ($transaction->details->sum('quantity') ?: 0) . ' item',
+                        'description' => 'Pembelian tiket ' . ($transaction->details->sum('quantity') ?: 0) . ' item'
+                            . ($transaction->rentalItems->isNotEmpty() ? ' + sewa fasilitas' : ''),
                         'time' => $transaction->created_at,
                     ])
             )
@@ -116,7 +117,7 @@ class AdminTicketController extends Controller
             ->get();
 
         $transactions = Transaction::query()
-            ->with(['user', 'details.tiketKategori'])
+            ->with(['user', 'details.tiketKategori', 'rentalItems'])
             ->latest()
             ->limit(20)
             ->get();
@@ -307,7 +308,7 @@ class AdminTicketController extends Controller
     private function reportTransactions()
     {
         return Transaction::query()
-            ->with(['user', 'details.tiketKategori'])
+            ->with(['user', 'details.tiketKategori', 'rentalItems'])
             ->latest()
             ->get();
     }

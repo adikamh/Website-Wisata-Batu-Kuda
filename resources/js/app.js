@@ -159,6 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const visitDateInput = document.querySelector('input[name="visit_date"]');
     const campingEndDateInput = document.querySelector('input[name="camping_end_date"]');
     const visitorCountInput = document.querySelector('input[name="visitor_count"]');
+    const rentalQuantityInputs = document.querySelectorAll('[data-rental-price]');
     const summaryBox = document.querySelector('[data-ticket-summary]');
 
     const formatRupiah = (value) => new Intl.NumberFormat('id-ID').format(value);
@@ -212,12 +213,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const days = calculateDays();
         const packageName = selectedPackage?.dataset.ticketName ?? '-';
         const packagePrice = Number.parseInt(selectedPackage?.dataset.ticketPrice ?? '0', 10);
-        const total = packagePrice * visitors * days;
+        const ticketTotal = packagePrice * visitors * days;
+        const rentalTotal = [...rentalQuantityInputs].reduce((sum, input) => {
+            const quantity = Math.max(0, Number.parseInt(input.value || '0', 10) || 0);
+            const price = Number.parseInt(input.dataset.rentalPrice || '0', 10) || 0;
+
+            return sum + (quantity * price);
+        }, 0);
+        const total = ticketTotal + rentalTotal;
 
         summaryBox.querySelector('[data-summary-package]').textContent = packageName;
         summaryBox.querySelector('[data-summary-visitors]').textContent = visitors;
         summaryBox.querySelector('[data-summary-days]').textContent = days;
         summaryBox.querySelector('[data-summary-price]').textContent = formatRupiah(packagePrice);
+        summaryBox.querySelector('[data-summary-rentals]').textContent = formatRupiah(rentalTotal);
         summaryBox.querySelector('[data-summary-total]').textContent = formatRupiah(total);
     };
 
@@ -238,6 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     campingEndDateInput?.addEventListener('change', syncSummary);
     visitorCountInput?.addEventListener('input', syncSummary);
+    rentalQuantityInputs.forEach((input) => {
+        input.addEventListener('input', syncSummary);
+    });
 
     syncCheckoutDate();
     syncPaymentGroups();

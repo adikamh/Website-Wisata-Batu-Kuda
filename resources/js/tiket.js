@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const visitDateInput = ticketPage.querySelector('input[name="visit_date"]');
     const campingEndDateInput = ticketPage.querySelector('input[name="camping_end_date"]');
     const visitorCountInput = ticketPage.querySelector('input[name="visitor_count"]');
+    const rentalQuantityInputs = ticketPage.querySelectorAll('[data-rental-price]');
     const summaryBox = ticketPage.querySelector('[data-ticket-summary]');
     const form = ticketPage.querySelector('.ticket-form');
     const submitButton = ticketPage.querySelector('.ticket-submit');
@@ -70,12 +71,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const days = calculateDays();
         const packageName = selectedPackage?.dataset.ticketName ?? '-';
         const packagePrice = Number.parseInt(selectedPackage?.dataset.ticketPrice ?? '0', 10);
-        const total = packagePrice * visitors * days;
+        const ticketTotal = packagePrice * visitors * days;
+        const rentalTotal = [...rentalQuantityInputs].reduce((sum, input) => {
+            const quantity = Math.max(0, Number.parseInt(input.value || '0', 10) || 0);
+            const price = Number.parseInt(input.dataset.rentalPrice || '0', 10) || 0;
+
+            return sum + (quantity * price);
+        }, 0);
+        const total = ticketTotal + rentalTotal;
 
         summaryBox.querySelector('[data-summary-package]').textContent = packageName;
         summaryBox.querySelector('[data-summary-visitors]').textContent = String(visitors);
         summaryBox.querySelector('[data-summary-days]').textContent = String(days);
         summaryBox.querySelector('[data-summary-price]').textContent = formatRupiah(packagePrice);
+        summaryBox.querySelector('[data-summary-rentals]').textContent = formatRupiah(rentalTotal);
         summaryBox.querySelector('[data-summary-total]').textContent = formatRupiah(total);
     };
 
@@ -96,6 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     campingEndDateInput?.addEventListener('change', syncSummary);
     visitorCountInput?.addEventListener('input', syncSummary);
+    rentalQuantityInputs.forEach((input) => {
+        input.addEventListener('input', syncSummary);
+    });
 
     form?.addEventListener('submit', () => {
         if (!form.checkValidity() || !submitButton) {

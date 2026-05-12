@@ -585,6 +585,51 @@ a { text-decoration: none; color: inherit; }
     display: grid;
     gap: 1rem;
 }
+.ticket-rental-grid {
+    display: grid;
+    gap: 0.9rem;
+}
+.ticket-rental-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 22px;
+    border: 1px solid rgba(45,106,79,0.12);
+    background: var(--white);
+}
+.ticket-rental-card strong {
+    display: block;
+    color: var(--green-deepest);
+    font-size: 1rem;
+}
+.ticket-rental-card span,
+.ticket-rental-card small {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+.ticket-rental-card__control {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.ticket-rental-card__control b {
+    color: var(--green-fresh);
+    white-space: nowrap;
+}
+.ticket-rental-card__control input {
+    width: 82px;
+    padding: 0.72rem 0.8rem;
+    border-radius: 16px;
+    border: 1px solid rgba(45,106,79,0.14);
+    background: #fbfdfb;
+    color: var(--text-dark);
+    font: inherit;
+}
 .ticket-payment-group {
     display: none;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1337,6 +1382,7 @@ footer ul li a:hover { color: var(--green-light); }
     .ticket-hero__content,
     .ticket-layout,
     .ticket-form-grid,
+    .ticket-rental-card,
     .ticket-payment-group {
         grid-template-columns: 1fr;
     }
