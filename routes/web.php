@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\AdminTicketController;
+use App\Http\Controllers\Admin\AdminRentalFacilityController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,9 @@ Route::get('/gallery-file/{path}', function (string $path) {
 })->where('path', '.*')->name('gallery.image');
 
 Route::get('/infowisata', [InfoWisataController::class, 'index'])->name('infowisata.index');
+Route::get('/gallery',[GalleryController::class,'index'])->name('gallery.index');
+Route::get('/gallery/{gallery}',[GalleryController::class,'show'])->name('gallery.show');
+Route::get('/gallery/{gallery}/komentar',[GalleryController::class,'getKomentar'])->name('gallery.komentar');
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -44,13 +48,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/tiket', [WisataController::class, 'tiket'])->name('tiket');
     Route::post('/tiket', [WisataController::class, 'storeTiket'])->name('tiket.store');
-    Route::get('/gallery',[GalleryController::class,'index'])->name('gallery.index');
     Route::post('/gallery',[GalleryController::class,'store'])->name('gallery.store');
-    Route::get('/gallery/{gallery}',[GalleryController::class,'show'])->name('gallery.show');
     Route::put('/gallery/{gallery}',[GalleryController::class,'update'])->name('gallery.update');
     Route::delete('/gallery/{gallery}',[GalleryController::class,'destroy'])->name('gallery.destroy');
     Route::post('/gallery/{gallery}/like',[GalleryController::class,'like'])->name('gallery.like');
-    Route::get('/gallery/{gallery}/komentar',[GalleryController::class,'getKomentar'])->name('gallery.komentar');
     Route::post('/gallery/{gallery}/komentar',[GalleryController::class,'storeKomentar'])->name('gallery.komentar.store');
     Route::delete('/gallery/komentar/{komentar}',[GalleryController::class,'destroyKomentar'])->name('gallery.komentar.destroy');
     Route::get('/lokasi', [LocationController::class,'index'])->name('lokasi.index');
@@ -73,6 +74,10 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/tickets', [AdminTicketController::class, 'store'])->name('admin.tickets.store');
     Route::put('/tickets/{ticket}', [AdminTicketController::class, 'update'])->name('admin.tickets.update');
     Route::delete('/tickets/{ticket}', [AdminTicketController::class, 'destroy'])->name('admin.tickets.destroy');
+    Route::get('/fasilitas-sewa', [AdminRentalFacilityController::class, 'index'])->name('admin.facilities');
+    Route::post('/fasilitas-sewa', [AdminRentalFacilityController::class, 'store'])->name('admin.facilities.store');
+    Route::put('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'update'])->name('admin.facilities.update');
+    Route::delete('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'destroy'])->name('admin.facilities.destroy');
     Route::get('/reports/visitors.pdf', [AdminTicketController::class, 'downloadVisitorPdf'])->name('admin.reports.visitors.pdf');
     Route::get('/reports/finance.xls', [AdminTicketController::class, 'downloadFinanceExcel'])->name('admin.reports.finance.excel');
 });

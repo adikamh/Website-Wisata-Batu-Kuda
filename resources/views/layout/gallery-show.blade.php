@@ -79,6 +79,7 @@
                     @endforelse
                 </div>
 
+                @auth
                 <form class="lightbox__comment-form gallery-detail__comment-form" id="lbCommentForm">
                     @csrf
                     <input type="hidden" name="gallery_id" id="lbGalleryId" value="{{ $gallery->id }}">
@@ -98,6 +99,12 @@
                         </div>
                     </div>
                 </form>
+                @else
+                <div class="lightbox__login-prompt">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <a href="{{ route('login') }}">Masuk</a> untuk like & komentar
+                </div>
+                @endauth
             </div>
         </div>
     </div>
@@ -112,7 +119,7 @@
 @push('scripts')
     <script>
         window.GALLERY_CONFIG = {
-            isAuth: true,
+            isAuth: {{ Auth::check() ? 'true' : 'false' }},
             canUpload: {{ $canUpload ? 'true' : 'false' }},
             userId: {{ Auth::id() ?? 'null' }},
             csrfToken: '{{ csrf_token() }}',

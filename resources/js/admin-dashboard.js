@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.getElementById('adminSidebar');
     const mainContent = document.getElementById('adminMain');
     const toggleButton = document.getElementById('sidebarToggle');
+    const toggleIcon = toggleButton?.querySelector('.sidebar-edge-icon');
     const overlay = document.getElementById('adminSidebarOverlay');
     const desktopQuery = window.matchMedia('(min-width: 1024px)');
     const storageKey = 'admin-sidebar-collapsed';
@@ -14,7 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const setCollapsed = (collapsed) => {
         sidebar?.classList.toggle('collapsed', collapsed);
         mainContent?.classList.toggle('is-collapsed', collapsed);
+        toggleButton?.classList.toggle('is-collapsed', collapsed);
         toggleButton?.setAttribute('aria-expanded', String(!collapsed));
+
+        if (toggleIcon) {
+            toggleIcon.textContent = collapsed ? '▶' : '◀';
+        }
 
         try {
             localStorage.setItem(storageKey, collapsed ? '1' : '0');
@@ -25,6 +31,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const closeMobileSidebar = () => {
         sidebar?.classList.remove('is-open');
+        toggleButton?.classList.remove('is-open');
+        toggleButton?.setAttribute('aria-expanded', 'false');
+
+        if (toggleIcon) {
+            toggleIcon.textContent = '▶';
+        }
+
         setOverlay(false);
     };
 
@@ -45,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         sidebar?.classList.remove('collapsed');
         mainContent?.classList.remove('is-collapsed');
+        toggleButton?.classList.remove('is-collapsed');
         closeMobileSidebar();
     };
 
@@ -56,6 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const open = !sidebar?.classList.contains('is-open');
         sidebar?.classList.toggle('is-open', open);
+        toggleButton?.classList.toggle('is-open', open);
+        toggleButton?.setAttribute('aria-expanded', String(open));
+
+        if (toggleIcon) {
+            toggleIcon.textContent = open ? '◀' : '▶';
+        }
+
         setOverlay(open);
     });
 

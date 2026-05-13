@@ -68,12 +68,13 @@
                             <tbody class="divide-y divide-gray-100 bg-white">
                                 @forelse ($transactions as $transaction)
                                     @php($detail = $transaction->details->first())
+                                    @php($rentalText = $transaction->rentalItems->isNotEmpty() ? $transaction->rentalItems->map(fn ($item) => $item->facility_name . ' x' . $item->quantity)->implode(', ') : '-')
                                     <tr class="align-top transition hover:bg-gray-50">
                                         <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{{ $transaction->created_at->format('d/m/Y') }}</td>
                                         <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-900">INV-{{ str_pad($transaction->id, 6, '0', STR_PAD_LEFT) }}</td>
                                         <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{{ $transaction->user->name ?? '-' }}</td>
                                         <td class="px-4 py-4 text-sm text-gray-700">
-                                            <button type="button" data-ticket-detail-open data-jumlah="{{ $detail->quantity ?? 0 }}" data-masuk="{{ optional($detail?->start_date)->format('d/m/Y') ?? ($detail->start_date ?? '-') }}" data-keluar="{{ optional($detail?->end_date)->format('d/m/Y') ?? ($detail->end_date ?? '-') }}" data-nama="{{ $transaction->user->name ?? '-' }}" data-paket="{{ $detail?->tiketKategori?->nama_kategori ?? '-' }}" class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700">
+                                            <button type="button" data-ticket-detail-open data-jumlah="{{ $detail->quantity ?? 0 }}" data-masuk="{{ optional($detail?->start_date)->format('d/m/Y') ?? ($detail->start_date ?? '-') }}" data-keluar="{{ optional($detail?->end_date)->format('d/m/Y') ?? ($detail->end_date ?? '-') }}" data-nama="{{ $transaction->user->name ?? '-' }}" data-paket="{{ $detail?->tiketKategori?->nama_kategori ?? '-' }}" data-fasilitas="{{ $rentalText }}" class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700">
                                                 <i class="fas fa-eye mr-1"></i> Detail
                                             </button>
                                         </td>
@@ -119,6 +120,10 @@
                 <div class="rounded-lg bg-gray-50 p-4 sm:col-span-2">
                     <span class="block text-xs uppercase text-gray-400">Paket</span>
                     <span id="modalPaket" class="font-semibold text-gray-800"></span>
+                </div>
+                <div class="rounded-lg bg-gray-50 p-4 sm:col-span-2">
+                    <span class="block text-xs uppercase text-gray-400">Fasilitas Sewa</span>
+                    <span id="modalFasilitas" class="font-semibold text-gray-800"></span>
                 </div>
             </div>
             <div class="flex justify-end border-t bg-gray-50 px-6 py-4">
@@ -226,6 +231,7 @@
                 document.getElementById('modalTanggalKeluar').textContent = button.dataset.keluar;
                 document.getElementById('modalNama').textContent = button.dataset.nama;
                 document.getElementById('modalPaket').textContent = button.dataset.paket;
+                document.getElementById('modalFasilitas').textContent = button.dataset.fasilitas;
                 ticketDetailModal.classList.remove('hidden');
                 ticketDetailModal.classList.add('flex');
             }

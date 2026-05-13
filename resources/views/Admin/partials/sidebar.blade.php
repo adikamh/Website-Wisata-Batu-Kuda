@@ -15,6 +15,11 @@
             'route' => 'admin.tickets',
             'icon' => 'fas fa-ticket-alt',
         ],
+        [
+            'label' => 'Fasilitas Sewa',
+            'route' => 'admin.facilities',
+            'icon' => 'fas fa-campground',
+        ],
     ];
 @endphp
 
@@ -37,7 +42,7 @@
         @foreach ($navItems as $item)
             <a
                 href="{{ route($item['route']) }}"
-                class="sidebar-link {{ request()->routeIs($item['route']) ? 'is-active' : '' }}"
+                class="sidebar-link {{ request()->routeIs($item['route']) || request()->routeIs($item['route'] . '.*') ? 'is-active' : '' }}"
                 title="{{ $item['label'] }}"
             >
                 <i class="sidebar-link-icon {{ $item['icon'] }}"></i>
