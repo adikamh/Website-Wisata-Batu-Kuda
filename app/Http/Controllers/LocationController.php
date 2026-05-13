@@ -30,6 +30,16 @@ class LocationController extends Controller
             'routing' => [
                 'serviceUrl' => 'https://router.project-osrm.org/route/v1',
                 'profile' => 'driving',
+                'profiles' => [
+                    'car' => 'driving',
+                    'motorcycle' => 'driving',
+                    'walking' => 'driving',
+                ],
+                'durationMultipliers' => [
+                    'car' => 1,
+                    'motorcycle' => 0.9,
+                    'walking' => 12,
+                ],
             ],
             'referenceRoutes' => [
                 'fastestGpxUrl' => asset('routes/batu-kuda-fastest.gpx'),

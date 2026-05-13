@@ -25,7 +25,6 @@
     <section class="route-page" aria-labelledby="routeTitle">
         <header class="route-toolbar">
             <div class="route-toolbar__copy">
-                <p class="route-eyebrow">OpenStreetMap + OSRM</p>
                 <h1 id="routeTitle">Rute ke Wisata Batu Kuda</h1>
                 <p>
                     Dari lokasi akun menuju Desa Cikadut, Cimenyan, dengan pilihan jalur tercepat, normal, dan lambat.
@@ -43,12 +42,6 @@
             </div>
 
             <div class="route-toolbar__actions">
-                <a class="route-action route-action--ghost" href="{{ route('home') }}">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M15 18l-6-6 6-6"/>
-                    </svg>
-                    Beranda
-                </a>
                 <button
                     class="route-action"
                     type="button"
@@ -61,6 +54,11 @@
                     </svg>
                     Instruksi
                 </button>
+                <div class="route-vehicle-switch" id="routeVehicleSwitch" role="tablist" aria-label="Pilih kendaraan">
+                    <button type="button" class="route-vehicle-btn is-active" data-vehicle-mode="car" aria-selected="true">Mobil</button>
+                    <button type="button" class="route-vehicle-btn" data-vehicle-mode="motorcycle" aria-selected="false">Motor</button>
+                    <button type="button" class="route-vehicle-btn" data-vehicle-mode="walking" aria-selected="false">Jalan kaki</button>
+                </div>
             </div>
         </header>
 
@@ -106,7 +104,7 @@
             <aside class="route-directions is-open" id="routeDirectionsPanel" aria-label="Panel instruksi jalan">
                 <div class="route-directions__header">
                     <div>
-                        <p class="route-eyebrow">Turn by turn</p>
+                        <p class="route-eyebrow">Panduan arah</p>
                         <h2>Instruksi Jalan</h2>
                     </div>
                     <button class="route-close" type="button" id="routePanelClose" aria-label="Tutup panel instruksi">
@@ -130,11 +128,11 @@
                 <div class="route-tabs" id="routeTabs" role="tablist" aria-label="Pilih variasi jalur"></div>
 
                 <ol class="route-steps" id="routeSteps">
-                    <li class="route-step route-step--empty">Menunggu data rute dari OSRM.</li>
+                    <li class="route-step route-step--empty">Menunggu data rute dari layanan peta.</li>
                 </ol>
 
                 <div class="route-directions__note">
-                    Jalur dan estimasi mengikuti data publik OSRM/OpenStreetMap. Periksa kondisi jalan nyata sebelum berangkat.
+                    Jalur dan estimasi mengikuti data peta publik. Periksa kondisi jalan nyata sebelum berangkat.
                 </div>
             </aside>
         </div>

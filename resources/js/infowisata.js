@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-
     const navbar = document.getElementById('navbar');
     const tabs   = document.getElementById('iwTabs');
 
@@ -8,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
         navbar?.classList.toggle('scrolled', sy > 50);
         tabs?.classList.toggle('shadowed', sy > 200);
     }, { passive: true });
-
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -16,10 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 observer.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0.06, rootMargin: '0px 0px -32px 0px' });
 
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
     document.querySelectorAll('.iw-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.iw-tab').forEach(t => t.classList.remove('active'));
@@ -28,16 +25,51 @@ document.addEventListener('DOMContentLoaded', () => {
             const filter = tab.dataset.filter;
             document.querySelectorAll('.iw-section').forEach((sec, i) => {
                 const match = filter === 'all' || sec.dataset.kategori === filter;
-                sec.style.display = match ? 'block' : 'none';
+                sec.style.display = match ? '' : 'none';
                 if (match) {
                     sec.style.setProperty('--delay', `${i * 0.06}s`);
                     sec.classList.remove('visible');
                     setTimeout(() => observer.observe(sec), 10);
                 }
             });
+
+            // Re-build sidebar for visible items
+            rebuildSidebar(filter);
         });
     });
 
+    // ── Sidebar: build & active tracking ─────────────────
+    function rebuildSidebar(filter) {
+        const list = document.getElementById('sidebarNavList');
+        if (!list) return;
+        list.querySelectorAll('.iw-nav-item').forEach(item => {
+            const sid  = item.dataset.sid;
+            const sec  = document.querySelector(`.iw-section[data-id="${sid}"]`);
+            const kat  = sec?.dataset.kategori || '';
+            item.style.display = (filter === 'all' || kat === filter) ? '' : 'none';
+        });
+    }
+
+    // Active sidebar item on scroll
+    const sidebarItems = document.querySelectorAll('.iw-nav-item[data-sid]');
+    const sections     = document.querySelectorAll('.iw-section[id^="sec-"]');
+
+    if (sidebarItems.length && sections.length) {
+        const sectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id.replace('sec-', '');
+                    sidebarItems.forEach(item => item.classList.remove('active'));
+                    const active = document.querySelector(`.iw-nav-item[data-sid="${id}"]`);
+                    active?.classList.add('active');
+                }
+            });
+        }, { rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+
+        sections.forEach(sec => sectionObserver.observe(sec));
+    }
+
+    // ── User dropdown ──────────────────────────────────────
     const userBtn  = document.getElementById('userMenuBtn');
     const dropdown = document.getElementById('userDropdown');
     if (userBtn && dropdown) {
@@ -53,9 +85,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ── Flash auto-remove ──────────────────────────────────
     const flash = document.getElementById('flashMsg');
     if (flash) setTimeout(() => flash?.remove(), 5000);
 
+    // ── Textarea char count ────────────────────────────────
     const descTA = document.getElementById('fDeskripsi');
     const descCt = document.getElementById('descCount');
     if (descTA && descCt) {
@@ -66,6 +100,13 @@ document.addEventListener('DOMContentLoaded', () => {
         descTA.addEventListener('input', updateCount);
     }
 });
+
+window.carouselScroll = function(trackId, dir) {
+    const track = document.getElementById(trackId);
+    if (!track) return;
+    const itemWidth = track.querySelector('.iw-gal-item')?.offsetWidth || 220;
+    track.scrollBy({ left: dir * (itemWidth + 12), behavior: 'smooth' });
+};
 
 window.openModal = function(mode, sectionId = null) {
     const overlay  = document.getElementById('modalOverlay');
@@ -82,11 +123,11 @@ window.openModal = function(mode, sectionId = null) {
     modal.style.display = '';
 
     if (mode === 'create') {
-        form.action     = '/infowisata';
-        methSpan.innerHTML = '';
-        title.textContent  = 'Tambah Seksi Info';
-        icon.textContent   = '✨';
-        sub.textContent    = 'Buat konten informasi baru untuk wisatawan';
+        form.action          = '/infowisata';
+        methSpan.innerHTML   = '';
+        title.textContent    = 'Tambah Seksi Info';
+        icon.textContent     = '✨';
+        sub.textContent      = 'Buat konten informasi baru untuk wisatawan';
         saveText.textContent = 'Simpan Seksi';
         form.reset();
         document.getElementById('descCount').textContent = '0';
@@ -94,21 +135,21 @@ window.openModal = function(mode, sectionId = null) {
         const sec = document.querySelector(`.iw-section[data-id="${sectionId}"]`);
         if (!sec) return;
 
-        form.action       = `/infowisata/${sectionId}`;
+        form.action        = `/infowisata/${sectionId}`;
         methSpan.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
         title.textContent  = 'Edit Seksi Info';
         icon.textContent   = '✏️';
         sub.textContent    = 'Perbarui konten informasi';
         saveText.textContent = 'Simpan Perubahan';
 
-        const kat   = sec.querySelector('.iw-sec-kat')?.textContent?.trim() || '';
+        const kat   = sec.querySelector('.iw-sec-kat')?.textContent?.trim()  || '';
         const ico   = sec.querySelector('.iw-sec-icon')?.textContent?.trim() || '';
-        const jdl   = sec.querySelector('.iw-sec-title')?.textContent?.trim() || '';
+        const jdl   = sec.querySelector('.iw-sec-title')?.textContent?.trim()|| '';
         const desc  = sec.querySelector('.iw-sec-desc')?.textContent?.trim() || '';
 
-        document.getElementById('fKategori').value = kat;
-        document.getElementById('fIcon').value     = ico;
-        document.getElementById('fJudul').value    = jdl;
+        document.getElementById('fKategori').value  = kat;
+        document.getElementById('fIcon').value      = ico;
+        document.getElementById('fJudul').value     = jdl;
         document.getElementById('fDeskripsi').value = desc;
         document.getElementById('descCount').textContent = desc.length;
     }

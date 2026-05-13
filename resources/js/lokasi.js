@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabsElement = document.getElementById('routeTabs');
     const stepsElement = document.getElementById('routeSteps');
     const legendElement = document.getElementById('routeLegend');
+    const vehicleSwitchElement = document.getElementById('routeVehicleSwitch');
     const durationElement = document.querySelector('[data-route-duration]');
     const distanceElement = document.querySelector('[data-route-distance]');
 
@@ -44,15 +45,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const routeLayers = [];
     const markers = [];
     let activeRouteIndex = 0;
+    let activeVehicleMode = 'car';
     let routingControl = null;
     let originMarker = null;
     let referenceFastestRoute = null;
+    let activeOrigin = null;
 
     const routeStyles = [
         { label: 'Tercepat', color: '#2563eb', weight: 7, opacity: 0.96, dashArray: null },
         { label: 'Normal', color: '#16a34a', weight: 6, opacity: 0.86, dashArray: null },
         { label: 'Lambat', color: '#f59e0b', weight: 5, opacity: 0.82, dashArray: '12 9' },
     ];
+    const vehicleModes = createVehicleModes(config);
 
     const map = window.L.map(mapElement, {
         scrollWheelZoom: true,
@@ -83,6 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initLegendEvents();
     initCurrentLocationEvents();
     initOriginEditEvents();
+    initVehicleSwitchEvents();
+    updateVehicleUi();
     bootstrapRoute();
 
     async function bootstrapRoute() {
@@ -94,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const origin = await resolveOrigin();
+            activeOrigin = origin;
             setOriginMarker(origin, config.origin?.address || 'Berdasarkan koordinat akun');
             updateOriginLabel(config.origin?.address || config.origin?.name || 'Lokasi akun');
             fitMapToLayers(markers);
@@ -143,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     position.coords.longitude,
                 ];
 
+                activeOrigin = origin;
                 setOriginMarker(origin, 'Lokasi perangkat saat ini');
                 updateOriginLabel('Lokasi perangkat saat ini');
                 fitMapToLayers(markers);
@@ -204,7 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function requestRoutes(origin) {
-        setStatus('Membuat 3 variasi jalur dengan Leaflet Routing Machine dan OSRM...');
+        const vehicle = getActiveVehicleMode();
+
+        activeOrigin = origin;
+        setStatus(`Membuat 3 variasi jalur untuk ${vehicle.label.toLowerCase()}...`);
         clearRouteLayers();
         clearRoutingControl();
         renderLoadingState();
@@ -221,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ],
             router: window.L.Routing.osrmv1({
                 serviceUrl: config.routing?.serviceUrl || 'https://router.project-osrm.org/route/v1',
-                profile: config.routing?.profile || 'driving',
+                profile: vehicle.profile,
                 timeout: 30000,
                 useHints: false,
             }),
@@ -239,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).addTo(map);
 
         routingControl.on('routesfound', (event) => {
-            renderRoutes(event.routes || [], origin).catch((error) => {
+            renderRoutes(event.routes || [], origin, vehicle).catch((error) => {
                 renderFallbackRoute(origin, error);
             });
         });
@@ -262,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function renderRoutes(osrmRoutes, origin) {
+    async function renderRoutes(osrmRoutes, origin, vehicle) {
         clearRouteLayers();
 
         const baseRoutes = osrmRoutes
@@ -274,7 +285,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const preparedRoutes = await completeRouteVariants(origin, baseRoutes);
+        const preparedRoutes = applyVehicleAdjustments(
+            await completeRouteVariants(origin, baseRoutes),
+            vehicle
+        );
 
         preparedRoutes.forEach((route, index) => {
             const style = routeStyles[index];
@@ -299,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const generatedCount = preparedRoutes.filter((route) => route.isGeneratedVariant).length;
         const statusPrefix = preparedRoutes[0]?.isReferenceFastest
-            ? 'Jalur tercepat memakai referensi GPX yang kamu lampirkan'
+            ? 'Rekomendasi'
             : generatedCount > 0
             ? '3 jalur ditampilkan; sebagian variasi dibuat agar jalur normal dan lambat tetap terlihat'
             : '3 jalur berhasil dimuat dari OSRM';
@@ -460,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchRouteWithViaPoints(points) {
         const serviceUrl = config.routing?.serviceUrl || 'https://router.project-osrm.org/route/v1';
-        const profile = config.routing?.profile || 'driving';
+        const profile = getActiveVehicleMode().profile;
         const coordinates = points.map(([lat, lng]) => `${lng},${lat}`).join(';');
         const params = new URLSearchParams({
             overview: 'full',
@@ -623,6 +637,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             instructions: [],
         };
+        routes[0] = applyVehicleAdjustments([routes[0]], getActiveVehicleMode())[0];
 
         renderTabs(1);
         syncLegend(1);
@@ -631,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const message = error?.message || 'Rute jalan tidak tersedia dari OSRM.';
         setStatus(`${message} Ditampilkan garis perkiraan arah.`, 'error');
-        stepsElement.innerHTML = '<li class="route-step route-step--empty">Instruksi jalan belum tersedia karena OSRM tidak mengembalikan rute.</li>';
+        stepsElement.innerHTML = '<li class="route-step route-step--empty">Instruksi jalan belum tersedia karena layanan peta tidak mengembalikan rute.</li>';
     }
 
     function activateRoute(index) {
@@ -753,6 +768,25 @@ document.addEventListener('DOMContentLoaded', () => {
         currentLocationButton?.addEventListener('click', requestCurrentLocation);
     }
 
+    function initVehicleSwitchEvents() {
+        vehicleSwitchElement?.querySelectorAll('[data-vehicle-mode]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const nextMode = button.dataset.vehicleMode;
+
+                if (! nextMode || nextMode === activeVehicleMode || ! vehicleModes[nextMode]) {
+                    return;
+                }
+
+                activeVehicleMode = nextMode;
+                updateVehicleUi();
+
+                if (activeOrigin) {
+                    requestRoutes(activeOrigin);
+                }
+            });
+        });
+    }
+
     function initOriginEditEvents() {
         originEditBtn?.addEventListener('click', showOriginInput);
         originConfirmBtn?.addEventListener('click', handleOriginSearch);
@@ -794,6 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const coordinates = await geocodeAddress(searchAddress);
+            activeOrigin = coordinates;
             setOriginMarker(coordinates, searchAddress);
             updateOriginLabel(searchAddress);
             hideOriginInput();
@@ -882,7 +917,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (stepsElement) {
-            stepsElement.innerHTML = '<li class="route-step route-step--empty">Mengambil data rute dari OSRM...</li>';
+            stepsElement.innerHTML = '<li class="route-step route-step--empty">Mengambil data rute dari layanan peta...</li>';
         }
 
         syncLegend(3);
@@ -945,6 +980,57 @@ document.addEventListener('DOMContentLoaded', () => {
         statusText.textContent = message;
         statusElement.classList.toggle('is-success', type === 'success');
         statusElement.classList.toggle('is-error', type === 'error');
+    }
+
+    function createVehicleModes(routeConfig) {
+        const fallbackProfile = routeConfig?.routing?.profile || 'driving';
+        const profiles = routeConfig?.routing?.profiles || {};
+        const durationMultipliers = routeConfig?.routing?.durationMultipliers || {};
+
+        return {
+            car: {
+                label: 'Mobil',
+                profile: profiles.car || fallbackProfile,
+                durationMultiplier: Number(durationMultipliers.car || 1),
+            },
+            motorcycle: {
+                label: 'Motor',
+                profile: profiles.motorcycle || fallbackProfile,
+                durationMultiplier: Number(durationMultipliers.motorcycle || 0.9),
+            },
+            walking: {
+                label: 'Jalan kaki',
+                profile: profiles.walking || fallbackProfile,
+                durationMultiplier: Number(durationMultipliers.walking || 12),
+            },
+        };
+    }
+
+    function getActiveVehicleMode() {
+        return vehicleModes[activeVehicleMode] || vehicleModes.car;
+    }
+
+    function updateVehicleUi() {
+        vehicleSwitchElement?.querySelectorAll('[data-vehicle-mode]').forEach((button) => {
+            const isActive = button.dataset.vehicleMode === activeVehicleMode;
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+    }
+
+    function applyVehicleAdjustments(routeList, vehicle) {
+        return routeList.map((route) => {
+            const summary = route?.summary || {};
+            const duration = Number(summary.totalTime || summary.total_time || 0);
+
+            return {
+                ...route,
+                summary: {
+                    ...summary,
+                    totalTime: duration * Number(vehicle?.durationMultiplier || 1),
+                },
+            };
+        });
     }
 
     function parseRouteConfig(element) {
@@ -1015,15 +1101,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getInstructionText(instruction, index, totalInstructions) {
-        if (instruction?.text) {
-            return instruction.text;
-        }
-
         const type = getInstructionType(instruction?.type);
-        const road = instruction?.road || instruction?.name || '';
+        const rawText = typeof instruction?.text === 'string' ? instruction.text.trim() : '';
+        const road = instruction?.road || instruction?.name || extractRoadFromInstructionText(rawText);
 
         if (index === 0 || type === 'Head' || type === 'Depart') {
-            return road ? `Mulai dari ${road}` : 'Mulai perjalanan';
+            return road ? `Mulai dari ${road}` : translateInstructionText(rawText) || 'Mulai perjalanan';
         }
 
         if (index === totalInstructions - 1 || type === 'DestinationReached') {
@@ -1051,9 +1134,111 @@ document.addEventListener('DOMContentLoaded', () => {
             Onto: 'Masuk ke jalan',
             BearRight: 'Ambil arah kanan',
             BearLeft: 'Ambil arah kiri',
-        }[type] || 'Lanjutkan perjalanan';
+        }[type];
 
-        return road ? `${label} ke ${road}` : label;
+        if (label) {
+            return formatInstructionWithRoad(label, road);
+        }
+
+        return translateInstructionText(rawText) || (road ? `Lanjutkan ke ${road}` : 'Lanjutkan perjalanan');
+    }
+
+    function formatInstructionWithRoad(label, road) {
+        if (! road) {
+            return label;
+        }
+
+        const connector = /(ke kanan|ke kiri|arah kanan|arah kiri|bundaran|percabangan)$/i.test(label)
+            ? 'menuju'
+            : 'ke';
+
+        return `${label} ${connector} ${road}`;
+    }
+
+    function translateInstructionText(text) {
+        const cleanText = String(text || '').replace(/\s+/g, ' ').trim();
+
+        if (! cleanText) {
+            return '';
+        }
+
+        const road = extractRoadFromInstructionText(cleanText);
+
+        if (/arrived|destination/i.test(cleanText)) {
+            return 'Tiba di Wisata Batu Kuda';
+        }
+
+        if (/^head\b/i.test(cleanText)) {
+            return road ? `Mulai dari ${road}` : 'Mulai perjalanan';
+        }
+
+        if (/^turn right\b/i.test(cleanText)) {
+            return road ? `Belok kanan ke ${road}` : 'Belok kanan';
+        }
+
+        if (/^turn left\b/i.test(cleanText)) {
+            return road ? `Belok kiri ke ${road}` : 'Belok kiri';
+        }
+
+        if (/^sharp right\b/i.test(cleanText)) {
+            return road ? `Belok tajam ke kanan ke ${road}` : 'Belok tajam ke kanan';
+        }
+
+        if (/^sharp left\b/i.test(cleanText)) {
+            return road ? `Belok tajam ke kiri ke ${road}` : 'Belok tajam ke kiri';
+        }
+
+        if (/^(slight right|bear right|keep right)\b/i.test(cleanText)) {
+            return road ? `Ambil arah kanan ke ${road}` : 'Ambil arah kanan';
+        }
+
+        if (/^(slight left|bear left|keep left)\b/i.test(cleanText)) {
+            return road ? `Ambil arah kiri ke ${road}` : 'Ambil arah kiri';
+        }
+
+        if (/^(continue|go straight|straight)\b/i.test(cleanText)) {
+            return road ? `Lanjutkan ke ${road}` : 'Lanjutkan perjalanan';
+        }
+
+        if (/u-turn|turn around/i.test(cleanText)) {
+            return 'Putar balik';
+        }
+
+        if (/roundabout|rotary/i.test(cleanText)) {
+            return road ? `Masuk bundaran menuju ${road}` : 'Masuk bundaran';
+        }
+
+        if (/fork/i.test(cleanText)) {
+            return road ? `Ambil percabangan ke ${road}` : 'Ambil percabangan';
+        }
+
+        if (/merge/i.test(cleanText)) {
+            return road ? `Bergabung ke ${road}` : 'Bergabung ke jalan';
+        }
+
+        if (/ramp/i.test(cleanText)) {
+            return road ? `Ikuti ramp menuju ${road}` : 'Ikuti ramp';
+        }
+
+        return '';
+    }
+
+    function extractRoadFromInstructionText(text) {
+        const cleanText = String(text || '').replace(/\s+/g, ' ').trim();
+
+        if (! cleanText) {
+            return '';
+        }
+
+        const match = cleanText.match(/\b(?:onto|on|to|toward|towards)\s+(.+?)(?:\s+for\s+.+|\s+and\s+continue.*|$)/i);
+
+        if (! match?.[1]) {
+            return '';
+        }
+
+        return match[1]
+            .replace(/[.,;:]$/, '')
+            .trim();
     }
 
     function instructionTypeFromOsrmStep(step) {
