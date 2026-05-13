@@ -2,8 +2,11 @@
 
 @section('title', 'Data Pengguna')
 @section('page_title', 'Data Pengguna')
+@section('hide_admin_inline_alerts', 'true')
 
 @section('admin_content')
+    <x-sweet-alert :assets="false" />
+
     <div class="overflow-hidden rounded-xl bg-white shadow-sm">
         <div class="border-b bg-gray-50 px-6 py-4">
             <div>
@@ -91,10 +94,20 @@
                                 <button type="button" data-modal-open="editUserModal-{{ $user->id }}" class="mr-3 text-indigo-600 transition hover:text-indigo-900">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="inline-block" onsubmit="return confirm('Hapus pengguna ini?')">
+                                <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="inline-block">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-red-600 transition hover:text-red-900" {{ Auth::id() === $user->id ? 'disabled' : '' }}>
+                                    <button
+                                        type="submit"
+                                        class="text-red-600 transition hover:text-red-900 disabled:cursor-not-allowed disabled:text-gray-300"
+                                        title="{{ Auth::id() === $user->id ? 'Akun yang sedang login tidak bisa dihapus' : 'Hapus pengguna' }}"
+                                        data-swal-confirm
+                                        data-swal-title="Hapus pengguna ini?"
+                                        data-swal-text="Akun {{ $user->name }} akan dihapus dari data pengguna."
+                                        data-swal-confirm-text="Ya, hapus"
+                                        data-swal-cancel-text="Batal"
+                                        {{ Auth::id() === $user->id ? 'disabled' : '' }}
+                                    >
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>

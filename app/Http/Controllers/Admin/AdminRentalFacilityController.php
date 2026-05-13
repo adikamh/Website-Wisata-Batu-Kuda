@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RecordsAdminActivity;
 use App\Http\Controllers\Controller;
 use App\Models\RentalFacility;
 use Illuminate\Http\Request;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminRentalFacilityController extends Controller
 {
+    use RecordsAdminActivity;
+
     public function index()
     {
         $this->authorizeAdmin();
@@ -28,7 +31,9 @@ class AdminRentalFacilityController extends Controller
         $validated['stok_tersedia'] = $validated['total_stok'];
         $validated['is_active'] = $request->boolean('is_active', true);
 
-        RentalFacility::create($validated);
+        $facility = RentalFacility::create($validated);
+
+        $this->recordAdminActivity('facility_created', 'menambahkan fasilitas sewa "' . $facility->nama_fasilitas . '"', $facility);
 
         return redirect()
             ->route('admin.facilities')
@@ -55,6 +60,8 @@ class AdminRentalFacilityController extends Controller
 
         $facility->update($validated);
 
+        $this->recordAdminActivity('facility_updated', 'memperbarui fasilitas sewa "' . $facility->nama_fasilitas . '"', $facility);
+
         return redirect()
             ->route('admin.facilities')
             ->with('status', 'Fasilitas sewa berhasil diperbarui.');
@@ -64,7 +71,11 @@ class AdminRentalFacilityController extends Controller
     {
         $this->authorizeAdmin();
 
+        $deletedFacilityName = $facility->nama_fasilitas;
+
         $facility->delete();
+
+        $this->recordAdminActivity('facility_deleted', 'menghapus fasilitas sewa "' . $deletedFacilityName . '"', $facility);
 
         return redirect()
             ->route('admin.facilities')

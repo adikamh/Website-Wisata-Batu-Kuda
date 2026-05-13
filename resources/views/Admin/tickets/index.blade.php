@@ -2,8 +2,11 @@
 
 @section('title', 'Kelola Tiket')
 @section('page_title', 'Tiket')
+@section('hide_admin_inline_alerts', 'true')
 
 @section('admin_content')
+    <x-sweet-alert :assets="false" />
+
     <div class="space-y-6">
         <div class="overflow-hidden rounded-xl bg-white shadow-sm">
             <div class="border-b bg-gray-50 px-6 py-4">
@@ -219,6 +222,11 @@
                         closeTicketEditModal(modal);
                     }
                 });
+
+                if (modal.dataset.shouldOpen === 'true') {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
             });
 
             const ticketDetailModal = document.getElementById('ticketDetailModal');

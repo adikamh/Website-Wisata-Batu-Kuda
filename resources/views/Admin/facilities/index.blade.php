@@ -2,8 +2,11 @@
 
 @section('title', 'Kelola Fasilitas Sewa')
 @section('page_title', 'Fasilitas Sewa')
+@section('hide_admin_inline_alerts', 'true')
 
 @section('admin_content')
+    <x-sweet-alert :assets="false" />
+
     <div class="space-y-6">
         <div class="overflow-hidden rounded-xl bg-white shadow-sm">
             <div class="border-b bg-gray-50 px-6 py-4">
@@ -53,15 +56,24 @@
                                             <button type="button" data-facility-edit-open data-target="facilityEditModal-{{ $facility->id }}" class="mr-3 text-indigo-600 hover:text-indigo-900" title="Edit fasilitas">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <form action="{{ route('admin.facilities.destroy', $facility) }}" method="POST" class="inline" onsubmit="return confirm('Hapus fasilitas sewa ini?')">
+                                            <form action="{{ route('admin.facilities.destroy', $facility) }}" method="POST" class="inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-800" title="Hapus fasilitas">
+                                                <button
+                                                    type="submit"
+                                                    class="text-red-600 hover:text-red-800"
+                                                    title="Hapus fasilitas"
+                                                    data-swal-confirm
+                                                    data-swal-title="Hapus fasilitas sewa ini?"
+                                                    data-swal-text="Fasilitas {{ $facility->nama_fasilitas }} akan dihapus dari pilihan sewa user."
+                                                    data-swal-confirm-text="Ya, hapus"
+                                                    data-swal-cancel-text="Batal"
+                                                >
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
 
-                                            <div id="facilityEditModal-{{ $facility->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50 px-4">
+                                            <div id="facilityEditModal-{{ $facility->id }}" data-should-open="{{ old('facility_form') === ('edit-' . $facility->id) ? 'true' : 'false' }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50 px-4">
                                                 <div class="w-full max-w-lg rounded-xl bg-white shadow-2xl">
                                                     <div class="flex items-center justify-between border-b px-6 py-4">
                                                         <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-edit mr-2 text-emerald-600"></i> Edit Fasilitas</h3>
@@ -73,7 +85,11 @@
                                                     <form action="{{ route('admin.facilities.update', $facility) }}" method="POST">
                                                         @csrf
                                                         @method('PUT')
-                                                        @include('Admin.facilities.partials.form', ['facility' => $facility])
+                                                        <input type="hidden" name="facility_form" value="edit-{{ $facility->id }}">
+                                                        @include('Admin.facilities.partials.form', [
+                                                            'facility' => $facility,
+                                                            'useOldInput' => old('facility_form') === ('edit-' . $facility->id),
+                                                        ])
                                                     </form>
                                                 </div>
                                             </div>
@@ -92,7 +108,7 @@
         </div>
     </div>
 
-    <div id="facilityCreateModal" data-should-open="{{ $errors->any() && old('nama_fasilitas') ? 'true' : 'false' }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50 px-4">
+    <div id="facilityCreateModal" data-should-open="{{ old('facility_form') === 'create' ? 'true' : 'false' }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50 px-4">
         <div class="w-full max-w-lg rounded-xl bg-white shadow-2xl">
             <div class="flex items-center justify-between border-b px-6 py-4">
                 <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-campground mr-2 text-emerald-600"></i> Tambah Fasilitas</h3>
@@ -103,7 +119,11 @@
 
             <form action="{{ route('admin.facilities.store') }}" method="POST">
                 @csrf
-                @include('Admin.facilities.partials.form', ['facility' => null])
+                <input type="hidden" name="facility_form" value="create">
+                @include('Admin.facilities.partials.form', [
+                    'facility' => null,
+                    'useOldInput' => old('facility_form') === 'create',
+                ])
             </form>
         </div>
     </div>
@@ -166,6 +186,10 @@
                         closeModal(modal);
                     }
                 });
+
+                if (modal.dataset.shouldOpen === 'true') {
+                    openModal(modal);
+                }
             });
         });
     </script>

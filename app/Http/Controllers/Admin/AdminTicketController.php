@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RecordsAdminActivity;
 use App\Http\Controllers\Controller;
+use App\Models\AdminActivity;
 use App\Models\TiketKategori;
 use App\Models\Transaction;
 use App\Models\User;
@@ -10,11 +12,15 @@ use App\Models\Wisata;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Throwable;
 
 class AdminTicketController extends Controller
 {
+    use RecordsAdminActivity;
+
     public function dashboard()
     {
         $this->authorizeAdmin();
@@ -40,42 +46,7 @@ class AdminTicketController extends Controller
             })
             ->values();
 
-        $recentActivities = collect()
-            ->merge(
-                User::query()
-                    ->latest()
-                    ->limit(3)
-                    ->get()
-                    ->map(fn (User $user) => [
-                        'type' => 'user',
-                        'icon' => 'fa-user-plus',
-                        'icon_bg' => 'bg-green-100',
-                        'icon_text' => 'text-green-600',
-                        'title' => $user->name,
-                        'description' => 'Pengguna baru terdaftar',
-                        'time' => $user->created_at,
-                    ])
-            )
-            ->merge(
-                Transaction::query()
-                    ->with(['user', 'details', 'rentalItems'])
-                    ->latest()
-                    ->limit(3)
-                    ->get()
-                    ->map(fn (Transaction $transaction) => [
-                        'type' => 'transaction',
-                        'icon' => 'fa-ticket-alt',
-                        'icon_bg' => 'bg-indigo-100',
-                        'icon_text' => 'text-indigo-600',
-                        'title' => $transaction->user->name ?? 'Pengguna',
-                        'description' => 'Pembelian tiket ' . ($transaction->details->sum('quantity') ?: 0) . ' item'
-                            . ($transaction->rentalItems->isNotEmpty() ? ' + sewa fasilitas' : ''),
-                        'time' => $transaction->created_at,
-                    ])
-            )
-            ->sortByDesc('time')
-            ->take(5)
-            ->values();
+        $recentActivities = $this->recentAdminActivities();
 
         $stats = [
             'total_users' => User::count(),
@@ -131,12 +102,14 @@ class AdminTicketController extends Controller
 
         $validated = $this->validateTicket($request);
 
-        TiketKategori::create([
+        $ticket = TiketKategori::create([
             'wisata_id' => $this->batuKuda()->id,
             'nama_kategori' => $validated['nama_kategori'],
             'deskripsi' => $validated['deskripsi'] ?? null,
             'harga' => $validated['harga'],
         ]);
+
+        $this->recordAdminActivity('ticket_created', 'menambahkan tiket "' . $ticket->nama_kategori . '"', $ticket);
 
         return $this->redirectToTickets('Tiket berhasil ditambahkan.');
     }
@@ -147,10 +120,12 @@ class AdminTicketController extends Controller
 
         $validated = $this->validateUser($request);
 
-        User::create([
+        $createdUser = User::create([
             ...$validated,
             'password' => Hash::make($validated['password']),
         ]);
+
+        $this->recordAdminActivity('user_created', 'menambahkan akun "' . $createdUser->name . '"', $createdUser);
 
         return redirect()
             ->route('admin.users')
@@ -171,6 +146,8 @@ class AdminTicketController extends Controller
 
         $user->update($validated);
 
+        $this->recordAdminActivity('user_updated', 'memperbarui akun "' . $user->name . '"', $user);
+
         return redirect()
             ->route('admin.users')
             ->with('status', 'Pengguna berhasil diperbarui.');
@@ -182,7 +159,11 @@ class AdminTicketController extends Controller
 
         abort_if(Auth::id() === $user->id, 422, 'Akun admin yang sedang login tidak bisa dihapus.');
 
+        $deletedUserName = $user->name;
+
         $user->delete();
+
+        $this->recordAdminActivity('user_deleted', 'menghapus akun "' . $deletedUserName . '"', $user);
 
         return redirect()
             ->route('admin.users')
@@ -195,6 +176,8 @@ class AdminTicketController extends Controller
 
         $ticket->update($this->validateTicket($request));
 
+        $this->recordAdminActivity('ticket_updated', 'memperbarui tiket "' . $ticket->nama_kategori . '"', $ticket);
+
         return $this->redirectToTickets('Tiket berhasil diperbarui.');
     }
 
@@ -202,7 +185,11 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
+        $deletedTicketName = $ticket->nama_kategori;
+
         $ticket->delete();
+
+        $this->recordAdminActivity('ticket_deleted', 'menghapus tiket "' . $deletedTicketName . '"', $ticket);
 
         return $this->redirectToTickets('Tiket berhasil dihapus.');
     }
@@ -210,6 +197,8 @@ class AdminTicketController extends Controller
     public function downloadVisitorPdf()
     {
         $this->authorizeAdmin();
+
+        $this->recordAdminActivity('visitor_report_downloaded', 'mengunduh laporan daftar pengunjung');
 
         $lines = [
             'LAPORAN DAFTAR PENGUNJUNG BATU KUDA',
@@ -245,6 +234,8 @@ class AdminTicketController extends Controller
     public function downloadFinanceExcel()
     {
         $this->authorizeAdmin();
+
+        $this->recordAdminActivity('finance_report_downloaded', 'mengunduh laporan keuangan');
 
         $transactions = $this->reportTransactions();
         $totalRevenue = $transactions->sum('total_bayar');
@@ -311,6 +302,32 @@ class AdminTicketController extends Controller
             ->with(['user', 'details.tiketKategori', 'rentalItems'])
             ->latest()
             ->get();
+    }
+
+    private function recentAdminActivities()
+    {
+        try {
+            if (! Schema::hasTable('admin_activities')) {
+                return collect();
+            }
+
+            return AdminActivity::query()
+                ->latest()
+                ->limit(5)
+                ->get()
+                ->map(fn (AdminActivity $activity) => [
+                    'icon' => $activity->icon ?: 'fa-clipboard-list',
+                    'icon_bg' => $activity->icon_bg ?: 'bg-gray-100',
+                    'icon_text' => $activity->icon_text ?: 'text-gray-600',
+                    'title' => $activity->title ?: $activity->admin_name,
+                    'description' => $activity->description,
+                    'time' => $activity->created_at,
+                ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return collect();
+        }
     }
 
     private function makeSimplePdf(array $lines): string

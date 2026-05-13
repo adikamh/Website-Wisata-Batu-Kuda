@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Crypt;
 
 class User extends Authenticatable
 {
@@ -43,6 +45,28 @@ class User extends Authenticatable
             'latitude' => 'float',
             'longitude' => 'float',
         ];
+    }
+
+    public function getAddressAttribute($value): ?string
+    {
+        if ($value === null || $value === '') {
+            return $value;
+        }
+
+        try {
+            return Crypt::decryptString($value);
+        } catch (DecryptException) {
+            return $value;
+        }
+    }
+
+    public function setAddressAttribute($value): void
+    {
+        $value = is_string($value) ? trim($value) : $value;
+
+        $this->attributes['Address'] = blank($value)
+            ? null
+            : Crypt::encryptString($value);
     }
 
     /**
