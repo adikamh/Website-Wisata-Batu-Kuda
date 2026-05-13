@@ -19,4 +19,9 @@ class Transaction extends Model
     {
         return $this->hasMany(TransactionDetail::class, 'transaction_id');
     }
+
+    public function rentalItems()
+    {
+        return $this->hasMany(TransactionRentalItem::class, 'transaction_id');
+    }
 }

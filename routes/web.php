@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\AdminTicketController;
+use App\Http\Controllers\Admin\AdminRentalFacilityController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Route;
@@ -73,6 +74,10 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/tickets', [AdminTicketController::class, 'store'])->name('admin.tickets.store');
     Route::put('/tickets/{ticket}', [AdminTicketController::class, 'update'])->name('admin.tickets.update');
     Route::delete('/tickets/{ticket}', [AdminTicketController::class, 'destroy'])->name('admin.tickets.destroy');
+    Route::get('/fasilitas-sewa', [AdminRentalFacilityController::class, 'index'])->name('admin.facilities');
+    Route::post('/fasilitas-sewa', [AdminRentalFacilityController::class, 'store'])->name('admin.facilities.store');
+    Route::put('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'update'])->name('admin.facilities.update');
+    Route::delete('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'destroy'])->name('admin.facilities.destroy');
     Route::get('/reports/visitors.pdf', [AdminTicketController::class, 'downloadVisitorPdf'])->name('admin.reports.visitors.pdf');
     Route::get('/reports/finance.xls', [AdminTicketController::class, 'downloadFinanceExcel'])->name('admin.reports.finance.excel');
 });

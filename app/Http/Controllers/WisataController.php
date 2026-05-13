@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\ETicket;
 use App\Models\PaketWisata;
+use App\Models\RentalFacility;
 use App\Models\TiketKategori;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
+use App\Models\TransactionRentalItem;
 use App\Models\Wisata;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -14,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class WisataController
 {
@@ -54,9 +57,10 @@ class WisataController
 
         $ticketPackages = $this->ticketPackages();
         $paymentOptions = $this->paymentOptions();
+        $rentalFacilities = $this->rentalFacilities();
         $recentTicket = session('recentTicket');
 
-        return view('layout.tiket', compact('ticketPackages', 'paymentOptions', 'recentTicket'));
+        return view('layout.tiket', compact('ticketPackages', 'paymentOptions', 'rentalFacilities', 'recentTicket'));
     }
 
     public function storeTiket(Request $request)
@@ -69,7 +73,6 @@ class WisataController
 
         $ticketPackages = $this->ticketPackages();
         $paymentOptions = $this->paymentOptions();
-
         $validated = $request->validate([
             'phone' => ['nullable', 'string', 'max:20'],
             'ticket_category_id' => ['required', Rule::in(array_keys($ticketPackages))],
@@ -78,6 +81,8 @@ class WisataController
             'camping_end_date' => ['required', 'date', 'after_or_equal:visit_date'],
             'payment_category' => ['required', Rule::in(array_keys($paymentOptions))],
             'payment_method' => ['required', 'string', 'max:50'],
+            'rental_quantities' => ['nullable', 'array'],
+            'rental_quantities.*' => ['nullable', 'integer', 'min:0', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
         ], [
             'ticket_category_id.required' => 'Paket wisata wajib dipilih.',
@@ -89,6 +94,8 @@ class WisataController
             'camping_end_date.after_or_equal' => 'Tanggal keluar tidak boleh sebelum tanggal masuk.',
             'payment_category.required' => 'Kategori pembayaran wajib dipilih.',
             'payment_method.required' => 'Metode pembayaran wajib dipilih.',
+            'rental_quantities.*.integer' => 'Jumlah fasilitas sewa harus berupa angka bulat.',
+            'rental_quantities.*.min' => 'Jumlah fasilitas sewa tidak boleh kurang dari 0.',
         ]);
 
         if (! array_key_exists($validated['payment_method'], $paymentOptions[$validated['payment_category']])) {
@@ -104,11 +111,56 @@ class WisataController
         $endDate = Carbon::parse($validated['camping_end_date']);
         $totalDays = (int) $startDate->diffInDays($endDate) + 1;
         $visitorCount = (int) $validated['visitor_count'];
-        $totalBayar = $package['price'] * $visitorCount * $totalDays;
+        $ticketTotal = $package['price'] * $visitorCount * $totalDays;
         $paymentMethodLabel = $paymentOptions[$validated['payment_category']][$validated['payment_method']];
         $ticketCode = 'BK-' . now()->format('YmdHis') . '-' . random_int(100, 999);
+        $requestedRentals = collect($request->input('rental_quantities', []))
+            ->map(fn ($quantity) => (int) $quantity)
+            ->filter(fn (int $quantity) => $quantity > 0);
+        $rentalSummary = collect();
 
-        $transaction = DB::transaction(function () use ($validated, $package, $packageType, $visitorCount, $startDate, $endDate, $totalDays, $totalBayar, $paymentMethodLabel, $ticketCode) {
+        $transaction = DB::transaction(function () use ($validated, $package, $packageType, $visitorCount, $startDate, $endDate, $totalDays, $ticketTotal, $paymentMethodLabel, $ticketCode, $requestedRentals, &$rentalSummary) {
+            $rentalSummary = collect();
+            $rentalTotal = 0;
+
+            if ($requestedRentals->isNotEmpty()) {
+                $facilities = RentalFacility::query()
+                    ->whereIn('id', $requestedRentals->keys())
+                    ->where('is_active', true)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                foreach ($requestedRentals as $facilityId => $quantity) {
+                    $facility = $facilities->get((int) $facilityId);
+
+                    if (! $facility) {
+                        throw ValidationException::withMessages([
+                            'rental_quantities' => 'Fasilitas sewa yang dipilih tidak tersedia.',
+                        ]);
+                    }
+
+                    if ($facility->stok_tersedia < $quantity) {
+                        throw ValidationException::withMessages([
+                            'rental_quantities.' . $facilityId => 'Stok ' . $facility->nama_fasilitas . ' hanya tersisa ' . $facility->stok_tersedia . '.',
+                        ]);
+                    }
+
+                    $subtotal = (int) $facility->harga * $quantity;
+                    $rentalTotal += $subtotal;
+
+                    $rentalSummary->push([
+                        'id' => $facility->id,
+                        'name' => $facility->nama_fasilitas,
+                        'quantity' => $quantity,
+                        'price' => (int) $facility->harga,
+                        'subtotal' => $subtotal,
+                    ]);
+                }
+            }
+
+            $totalBayar = $ticketTotal + $rentalTotal;
+
             $transaction = Transaction::create([
                 'user_id' => Auth::id(),
                 'total_bayar' => $totalBayar,
@@ -120,7 +172,7 @@ class WisataController
                 'transaction_id' => $transaction->id,
                 'tiket_kategori_id' => $validated['ticket_category_id'],
                 'quantity' => $visitorCount,
-                'subtotal' => $package['price'] * $visitorCount,
+                'subtotal' => $ticketTotal,
                 'package_type' => $packageType,
                 'start_date' => $startDate->toDateString(),
                 'end_date' => $endDate->toDateString(),
@@ -134,6 +186,19 @@ class WisataController
                 'qr_code_hash' => hash('sha256', $ticketCode . '|' . $transaction->id),
             ]);
 
+            foreach ($rentalSummary as $rental) {
+                TransactionRentalItem::create([
+                    'transaction_id' => $transaction->id,
+                    'rental_facility_id' => $rental['id'],
+                    'facility_name' => $rental['name'],
+                    'quantity' => $rental['quantity'],
+                    'price' => $rental['price'],
+                    'subtotal' => $rental['subtotal'],
+                ]);
+
+                RentalFacility::whereKey($rental['id'])->decrement('stok_tersedia', $rental['quantity']);
+            }
+
             return $transaction;
         });
 
@@ -146,7 +211,8 @@ class WisataController
                 'package_name' => $package['name'],
                 'visitor_count' => $visitorCount,
                 'payment_method_label' => $paymentMethodLabel,
-                'total_bayar' => $totalBayar,
+                'rental_items' => $rentalSummary->values()->all(),
+                'total_bayar' => (int) $transaction->total_bayar,
             ]);
     }
 
@@ -220,5 +286,14 @@ class WisataController
                 'qris' => 'QRIS',
             ],
         ];
+    }
+
+    private function rentalFacilities()
+    {
+        return RentalFacility::query()
+            ->where('is_active', true)
+            ->where('stok_tersedia', '>', 0)
+            ->orderBy('nama_fasilitas')
+            ->get();
     }
 }

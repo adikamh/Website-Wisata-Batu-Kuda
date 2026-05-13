@@ -142,6 +142,46 @@
                             </label>
                         </div>
 
+                        @if ($rentalFacilities->isNotEmpty())
+                            <div class="ticket-section-block">
+                                <div class="ticket-block__title">
+                                    <h3>Sewa fasilitas</h3>
+                                    <p>Pilih tenda atau hammock yang ingin disewa bersama tiket.</p>
+                                </div>
+
+                                <div class="ticket-rental-grid">
+                                    @foreach ($rentalFacilities as $facility)
+                                        <div class="ticket-rental-card">
+                                            <div>
+                                                <strong>{{ $facility->nama_fasilitas }}</strong>
+                                                <span>{{ $facility->deskripsi ?: 'Fasilitas sewa dari pengelola Batu Kuda.' }}</span>
+                                                <small>Stok tersedia: {{ $facility->stok_tersedia }}</small>
+                                            </div>
+                                            <div class="ticket-rental-card__control">
+                                                <b>Rp {{ number_format($facility->harga, 0, ',', '.') }}</b>
+                                                <input
+                                                    type="number"
+                                                    name="rental_quantities[{{ $facility->id }}]"
+                                                    value="{{ old('rental_quantities.' . $facility->id, 0) }}"
+                                                    min="0"
+                                                    max="{{ $facility->stok_tersedia }}"
+                                                    data-rental-name="{{ $facility->nama_fasilitas }}"
+                                                    data-rental-price="{{ (int) $facility->harga }}"
+                                                    aria-label="Jumlah sewa {{ $facility->nama_fasilitas }}"
+                                                >
+                                            </div>
+                                            @error('rental_quantities.' . $facility->id)
+                                                <small class="ticket-error">{{ $message }}</small>
+                                            @enderror
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @error('rental_quantities')
+                                    <small class="ticket-error">{{ $message }}</small>
+                                @enderror
+                            </div>
+                        @endif
+
                         <div class="ticket-section-block">
                             <div class="ticket-block__title">
                                 <h3>Metode pembayaran</h3>
@@ -215,6 +255,10 @@
                             <span>Harga per orang</span>
                             <strong>Rp <span data-summary-price>{{ number_format($ticketPackages[$selectedTicketId]['price'] ?? 0, 0, ',', '.') }}</span></strong>
                         </div>
+                        <div class="ticket-summary-row" data-summary-rental-row>
+                            <span>Sewa fasilitas</span>
+                            <strong>Rp <span data-summary-rentals>0</span></strong>
+                        </div>
                         <div class="ticket-summary-row ticket-summary-row--total">
                             <span>Total bayar</span>
                             <strong>Rp <span data-summary-total>{{ number_format(($ticketPackages[$selectedTicketId]['price'] ?? 0) * (int) old('visitor_count', 1), 0, ',', '.') }}</span></strong>
@@ -251,6 +295,14 @@
                                     <span>Pembayaran</span>
                                     <strong>{{ $recentTicket['payment_method_label'] }}</strong>
                                 </div>
+                                @if (! empty($recentTicket['rental_items']))
+                                    <div>
+                                        <span>Fasilitas</span>
+                                        <strong>
+                                            {{ collect($recentTicket['rental_items'])->map(fn ($item) => $item['name'] . ' x' . $item['quantity'])->implode(', ') }}
+                                        </strong>
+                                    </div>
+                                @endif
                                 <div>
                                     <span>Total</span>
                                     <strong>Rp {{ number_format($recentTicket['total_bayar'], 0, ',', '.') }}</strong>
