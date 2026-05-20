@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Http;
+
 
 class AuthController
 {
@@ -65,6 +67,19 @@ class AuthController
 
     public function register(Request $request)
     {
+        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret' => env('RECAPTCHA_SECRET_KEY'),
+            'response' => $request->input('g-recaptcha-response'),
+            'remoteip' => $request->ip(),
+        ]);
+
+        $reponseData = $response->json();
+        if (!$response->successful() || !$reponseData['success']){
+            return back()
+                ->withErrors(['g-recaptcha-response' => 'Validasi reCAPTCHA gagal, Anda mungkin robot.'])
+                ->withInput();
+        }
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:50', 'unique:users,username', 'regex:/^[a-zA-Z0-9_]+$/'],
