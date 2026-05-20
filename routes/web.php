@@ -10,6 +10,7 @@ use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\InfoWisataController;
+use App\Http\Controllers\GoogleAuthController;
 
 Route::get('/', [WisataController::class, 'dashboard'])->name('home');
 
@@ -40,6 +41,10 @@ Route::get('/reset-otp', [AuthController::class, 'showResetOtp'])->name('reset.o
 Route::post('/reset-otp', [AuthController::class, 'verifyResetOtp'])->name('reset.otp.submit');
 Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'updatePassword'])->name('password.update');
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+Route::get('/auth/google/complete', [GoogleAuthController::class, 'showCompletionForm'])->name('auth.google.complete');
+Route::post('/auth/google/complete', [GoogleAuthController::class, 'completeRegistration'])->name('auth.google.complete.submit');
 
 Route::middleware('auth')->group(function () {
     Route::get('dashboard', function () {
