@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ETicket;
 use App\Models\PaketWisata;
+use App\Models\HomepageContent;
 use App\Models\RentalFacility;
 use App\Models\TiketKategori;
 use App\Models\Transaction;
@@ -44,7 +45,8 @@ class WisataController
             ];
         }
 
-        return view('layout.dashboard', compact('wisata'));
+            $content = HomepageContent::firstOrCreate([]);
+            return view('layout.dashboard', compact('wisata', 'content'));
     }
 
     public function tiket()

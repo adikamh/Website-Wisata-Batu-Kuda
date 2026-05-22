@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\AdminTicketController;
 use App\Http\Controllers\Admin\AdminRentalFacilityController;
+use App\Http\Controllers\Admin\DashboardContentController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Route;
@@ -85,6 +86,8 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::delete('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'destroy'])->name('admin.facilities.destroy');
     Route::get('/reports/visitors.pdf', [AdminTicketController::class, 'downloadVisitorPdf'])->name('admin.reports.visitors.pdf');
     Route::get('/reports/finance.xls', [AdminTicketController::class, 'downloadFinanceExcel'])->name('admin.reports.finance.excel');
+        Route::post('/dashboard-content', [DashboardContentController::class, 'updateContent'])->name('admin.dashboard-content.update');
+        Route::get('/dashboard-content', [DashboardContentController::class, 'getContent'])->name('admin.dashboard-content.get');
 });
 
 Route::post('/chat', ChatbotController::class);
