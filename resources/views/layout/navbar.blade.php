@@ -23,7 +23,7 @@
 
     <div class="nav-shell" id="navLinks">
         <ul class="nav-links">
-            <li><a href="{{ route('home') }}" data-nav-link class="{{ $isHome ? 'is-active' : '' }}">Dashboard</a></li>
+            <li><a href="{{ route('home') }}" data-nav-link class="{{ $isHome ? 'is-active' : '' }}">Beranda</a></li>
             <li><a href="{{ route('gallery.index') }}" data-nav-link class="{{ request()->routeIs('gallery.*') ? 'is-active' : '' }}">Galeri</a></li>
             <li><a href="{{ route('infowisata.index') }}" data-nav-link class="{{ request()->routeIs('infowisata.*') ? 'is-active' : ''}}">Info Wisata</a></li>
             <li><a href="{{ route('tiket') }}" data-nav-link class="{{ request()->routeIs('tiket') ? 'is-active' : '' }}">Tiket</a></li>

@@ -10,107 +10,9 @@
         crossorigin=""
     >
 
-    <style>
-        .canvas-button {
-            position: fixed;
-            left: 1.5rem;
-            bottom: 1.5rem;
-            z-index: 80;
-            padding: 0.95rem 1.25rem;
-            border: none;
-            border-radius: 9999px;
-            background: #40916c;
-            color: #ffffff;
-            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.16);
-            cursor: pointer;
-            font-weight: 700;
-        }
-
-        .canvas-modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 90;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.68);
-            align-items: center;
-            justify-content: center;
-        }
-
-        .canvas-modal.active {
-            display: flex;
-        }
-
-        .canvas-modal-inner {
-            width: min(100%, 980px);
-            max-height: 90vh;
-            overflow-y: auto;
-            background: #ffffff;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
-        }
-
-        .canvas-modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .canvas-modal-close {
-            border: none;
-            background: transparent;
-            color: #111827;
-            font-size: 1.75rem;
-            line-height: 1;
-            cursor: pointer;
-        }
-
-        .canvas-form-section {
-            margin-bottom: 1.5rem;
-        }
-
-        .canvas-form-section h3 {
-            margin-bottom: 0.75rem;
-            font-size: 1.05rem;
-            color: #111827;
-        }
-
-        .canvas-form-section label {
-            display: block;
-            margin-bottom: 0.4rem;
-            font-size: 0.95rem;
-            color: #4b5563;
-        }
-
-        .canvas-form-section input,
-        .canvas-form-section textarea {
-            width: 100%;
-            border: 1px solid #d1d5db;
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
-            font-size: 0.95rem;
-            color: #111827;
-            margin-bottom: 0.9rem;
-        }
-
-        .canvas-modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .canvas-editor-item {
-            border: 1px solid #e5e7eb;
-            border-radius: 0.9rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            background: #f9fafb;
-        }
-    </style>
+    @if(Auth::check() && Auth::user()->role === 'admin')
+        @vite('resources/css/kanvas-dashboard.css')
+    @endif
 @endpush
 
 @section('content')
@@ -170,6 +72,17 @@
     $infoTicketPrice = $content->info_ticket_price ?: $defaults['info_ticket_price'];
     $infoContact = $content->info_contact ?: $defaults['info_contact'];
     $tips = $content->tips ?: $defaults['tips'];
+    $canvasDashboardContent = [
+        'about_title' => $aboutTitle,
+        'about_subtitle' => $aboutSubtitle,
+        'about_description' => $aboutDescription,
+        'info_location' => $infoLocation,
+        'info_opening_hours' => $infoOpeningHours,
+        'info_ticket_price' => $infoTicketPrice,
+        'info_contact' => $infoContact,
+        'features' => $features,
+        'tips' => $tips,
+    ];
 @endphp
 
 <section class="hero">
@@ -222,7 +135,14 @@
 
 @if(Auth::check() && Auth::user()->role === 'admin')
     <button id="adminCanvasButton" class="canvas-button" type="button">Kanvas</button>
-    <div id="adminCanvasModal" class="canvas-modal" aria-hidden="true">
+    <div
+        id="adminCanvasModal"
+        class="canvas-modal"
+        aria-hidden="true"
+        data-update-url="{{ route('admin.dashboard-content.update') }}"
+        data-csrf-token="{{ csrf_token() }}"
+        data-content='@json($canvasDashboardContent)'
+    >
         <div class="canvas-modal-inner" role="dialog" aria-modal="true" aria-labelledby="canvasModalTitle">
             <div class="canvas-modal-header">
                 <h2 id="canvasModalTitle">Editor Konten Dashboard</h2>
@@ -710,134 +630,7 @@
         });
     </script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const adminButton = document.getElementById('adminCanvasButton');
-            const modal = document.getElementById('adminCanvasModal');
-            const closeButton = document.getElementById('canvasModalClose');
-            const cancelButton = document.getElementById('canvasCancelButton');
-            const saveButton = document.getElementById('canvasSaveButton');
-            const form = document.getElementById('canvasEditorForm');
-
-            if (!adminButton || !modal) {
-                return;
-            }
-
-            const contentPayload = {
-                about_title: @json($aboutTitle),
-                about_subtitle: @json($aboutSubtitle),
-                about_description: @json($aboutDescription),
-                info_location: @json($infoLocation),
-                info_opening_hours: @json($infoOpeningHours),
-                info_ticket_price: @json($infoTicketPrice),
-                info_contact: @json($infoContact),
-                features: @json($features),
-                tips: @json($tips),
-            };
-
-            const featuresContainer = document.getElementById('canvasFeaturesContainer');
-            const tipsContainer = document.getElementById('canvasTipsContainer');
-
-            const fillInputs = () => {
-                document.getElementById('canvasAboutTitle').value = contentPayload.about_title || '';
-                document.getElementById('canvasAboutSubtitle').value = contentPayload.about_subtitle || '';
-                document.getElementById('canvasAboutDescription').value = contentPayload.about_description || '';
-                document.getElementById('canvasInfoLocation').value = contentPayload.info_location || '';
-                document.getElementById('canvasInfoOpeningHours').value = contentPayload.info_opening_hours || '';
-                document.getElementById('canvasInfoTicketPrice').value = contentPayload.info_ticket_price || '';
-                document.getElementById('canvasInfoContact').value = contentPayload.info_contact || '';
-
-                featuresContainer.innerHTML = '';
-                (contentPayload.features || []).forEach((feature, index) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'canvas-editor-item';
-                    wrapper.innerHTML = `
-                        <strong>Fitur ${index + 1}</strong>
-                        <label>Judul</label>
-                        <input type="text" name="features[${index}][title]" value="${(feature.title||'').replace(/"/g, '&quot;')}" maxlength="120" />
-                        <label>Deskripsi</label>
-                        <textarea name="features[${index}][description]" rows="2">${feature.description || ''}</textarea>
-                    `;
-                    featuresContainer.appendChild(wrapper);
-                });
-
-                tipsContainer.innerHTML = '';
-                (contentPayload.tips || []).forEach((tip, index) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'canvas-editor-item';
-                    wrapper.innerHTML = `
-                        <strong>Panduan ${index + 1}</strong>
-                        <label>Judul</label>
-                        <input type="text" name="tips[${index}][title]" value="${(tip.title||'').replace(/"/g, '&quot;')}" maxlength="120" />
-                        <label>Deskripsi</label>
-                        <textarea name="tips[${index}][description]" rows="2">${tip.description || ''}</textarea>
-                    `;
-                    tipsContainer.appendChild(wrapper);
-                });
-            };
-
-            const toggleModal = (show) => {
-                modal.classList.toggle('active', show);
-                modal.setAttribute('aria-hidden', show ? 'false' : 'true');
-            };
-
-            adminButton.addEventListener('click', () => {
-                fillInputs();
-                toggleModal(true);
-            });
-
-            const closeModal = () => toggleModal(false);
-            closeButton.addEventListener('click', closeModal);
-            cancelButton.addEventListener('click', closeModal);
-            modal.addEventListener('click', (event) => {
-                if (event.target === modal) {
-                    closeModal();
-                }
-            });
-
-            saveButton.addEventListener('click', async () => {
-                const formData = new FormData(form);
-                const body = {};
-
-                for (const [key, value] of formData.entries()) {
-                    if (key.includes('features') || key.includes('tips')) {
-                        const [parent, index, field] = key.match(/([^[\]]+)\[(\d+)\]\[(.+)\]/).slice(1);
-                        body[parent] = body[parent] || [];
-                        body[parent][Number(index)] = body[parent][Number(index)] || {};
-                        body[parent][Number(index)][field] = value;
-                    } else {
-                        body[key] = value;
-                    }
-                }
-
-                saveButton.disabled = true;
-                saveButton.textContent = 'Menyimpan...';
-
-                try {
-                    const response = await fetch('{{ route('admin.dashboard-content.update') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                            Accept: 'application/json',
-                        },
-                        body: JSON.stringify(body),
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(data.message || 'Gagal menyimpan konten.');
-                    }
-
-                    window.location.reload();
-                } catch (error) {
-                    alert(error.message || 'Terjadi kesalahan saat menyimpan konten.');
-                } finally {
-                    saveButton.disabled = false;
-                    saveButton.textContent = 'Simpan Konten';
-                }
-            });
-        });
-    </script>
+    @if(Auth::check() && Auth::user()->role === 'admin')
+        @vite('resources/js/kanvas-dashboard.js')
+    @endif
 @endpush
