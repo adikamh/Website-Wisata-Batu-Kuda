@@ -17,6 +17,7 @@ export default defineConfig({
                 'resources/js/tiket.js',
                 'resources/css/lokasi.css',
                 'resources/js/lokasi.js',
+                'resources/css/auth.css',
                 'resources/js/auth.js',
                 'resources/js/validation.js',
                 'resources/js/chatbot.js',

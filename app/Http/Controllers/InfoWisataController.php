@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Admin\Concerns\RecordsAdminActivity;
 use App\Models\InfoWisata;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Route;
 
 class InfoWisataController
 {
+    use RecordsAdminActivity;
+
     // ── Helper: cek admin ────────────────────────────────
     private function isAdmin(): bool
     {
@@ -36,7 +39,9 @@ class InfoWisataController
             'urutan'    => 'nullable|integer|min:0',
         ]);
 
-        InfoWisata::create(array_merge($data, ['poin' => [], 'gambar' => []]));
+        $infoWisata = InfoWisata::create(array_merge($data, ['poin' => [], 'gambar' => []]));
+
+        $this->recordAdminActivity('info_created', 'menambahkan info wisata "' . $infoWisata->judul . '"', $infoWisata);
 
         return back()->with('success', "Seksi \"{$data['judul']}\" berhasil ditambahkan.");
     }
@@ -56,6 +61,8 @@ class InfoWisataController
 
         $infoWisata->update($data);
 
+        $this->recordAdminActivity('info_updated', 'memperbarui info wisata "' . $infoWisata->judul . '"', $infoWisata);
+
         return back()->with('success', "Seksi \"{$data['judul']}\" berhasil diperbarui.");
     }
 
@@ -65,6 +72,9 @@ class InfoWisataController
         abort_unless($this->isAdmin(), 403);
         $judul = $infoWisata->judul;
         $infoWisata->delete();
+
+        $this->recordAdminActivity('info_deleted', 'menghapus info wisata "' . $judul . '"', $infoWisata);
+
         return back()->with('success', "Seksi \"{$judul}\" berhasil dihapus.");
     }
     public function storePoin(Request $request, InfoWisata $infoWisata)
@@ -79,6 +89,8 @@ class InfoWisataController
         $poin   = $infoWisata->poin ?? [];
         $poin[] = ['judul' => $data['judul'] ?? '', 'isi' => $data['isi'] ?? ''];
         $infoWisata->update(['poin' => $poin]);
+
+        $this->recordAdminActivity('info_point_created', 'menambahkan poin pada info wisata "' . $infoWisata->judul . '"', $infoWisata);
 
         return back()->with('success', 'Poin berhasil ditambahkan.');
     }
@@ -98,6 +110,8 @@ class InfoWisataController
         $poin[$index] = ['judul' => $data['judul'] ?? '', 'isi' => $data['isi'] ?? ''];
         $infoWisata->update(['poin' => array_values($poin)]);
 
+        $this->recordAdminActivity('info_point_updated', 'memperbarui poin pada info wisata "' . $infoWisata->judul . '"', $infoWisata);
+
         return back()->with('success', 'Poin berhasil diperbarui.');
     }
 
@@ -111,6 +125,8 @@ class InfoWisataController
         array_splice($poin, $index, 1);
         $infoWisata->update(['poin' => array_values($poin)]);
 
+        $this->recordAdminActivity('info_point_deleted', 'menghapus poin pada info wisata "' . $infoWisata->judul . '"', $infoWisata);
+
         return back()->with('success', 'Poin berhasil dihapus.');
     }
 
@@ -123,6 +139,8 @@ class InfoWisataController
 
         array_splice($gambar, $index, 1);
         $infoWisata->update(['gambar' => array_values($gambar)]);
+
+        $this->recordAdminActivity('info_image_deleted', 'menghapus gambar pada info wisata "' . $infoWisata->judul . '"', $infoWisata);
 
         return back()->with('success', 'Gambar berhasil dihapus.');
     }

@@ -74,7 +74,7 @@
     margin-top: 0.85rem;
 }
 
-.route-location-meta span {
+.route-location-meta > span {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
@@ -90,6 +90,18 @@
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.route-location-meta > span:first-child {
+    flex: 1 1 560px;
+    max-width: min(100%, 720px);
+}
+
+#routeOriginLabel {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .route-location-meta strong {
@@ -111,7 +123,43 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
+    align-items: center;
     gap: 0.65rem;
+}
+
+.route-vehicle-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 42px;
+    padding: 0.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.route-vehicle-btn {
+    min-height: 32px;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.route-vehicle-btn:hover {
+    transform: translateY(-1px);
+    color: var(--white);
+}
+
+.route-vehicle-btn.is-active {
+    background: var(--green-light);
+    color: #082014;
 }
 
 .route-action,
@@ -645,7 +693,8 @@
 .route-close:focus-visible,
 .route-tab:focus-visible,
 .route-legend-item:focus-visible,
-.route-locate-button:focus-visible {
+.route-locate-button:focus-visible,
+.route-vehicle-btn:focus-visible {
     outline: 3px solid rgba(116, 198, 157, 0.45);
     outline-offset: 2px;
 }
@@ -662,6 +711,10 @@
 
     .route-toolbar__actions {
         justify-content: flex-start;
+    }
+
+    .route-vehicle-switch {
+        width: fit-content;
     }
 
     .route-layout {
@@ -729,13 +782,22 @@
         font-size: 0.88rem;
     }
 
-    .route-location-meta span {
+    .route-location-meta > span {
         max-width: 100%;
         width: 100%;
     }
 
     .route-action {
         flex: 1 1 145px;
+    }
+
+    .route-vehicle-switch {
+        width: 100%;
+    }
+
+    .route-vehicle-btn {
+        flex: 1 1 0;
+        padding: 0 0.5rem;
     }
 
     .route-layout {

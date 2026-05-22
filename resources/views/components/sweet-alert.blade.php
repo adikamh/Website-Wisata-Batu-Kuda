@@ -1,11 +1,14 @@
 @props([
+    'assets' => true,
     'flash' => true,
     'validation' => true,
 ])
 
-@once
-    @vite(['resources/js/sweet-alert.js'])
-@endonce
+@if ($assets)
+    @once
+        @vite(['resources/js/sweet-alert.js'])
+    @endonce
+@endif
 
 @php
     $alerts = [];

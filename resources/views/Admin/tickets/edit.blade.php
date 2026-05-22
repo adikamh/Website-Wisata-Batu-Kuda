@@ -1,3 +1,5 @@
+@php($useOldInput = old('ticket_form') === ('edit-' . $ticket->id))
+
 <td class="px-4 py-4 text-sm text-gray-700">
     {{ $ticket->nama_kategori }}
 </td>
@@ -13,7 +15,7 @@
     </button>
     @include('Admin.tickets.hapus')
 
-    <div id="ticketEditModal-{{ $ticket->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50 px-4">
+    <div id="ticketEditModal-{{ $ticket->id }}" data-should-open="{{ $useOldInput ? 'true' : 'false' }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50 px-4">
         <div class="w-full max-w-lg rounded-xl bg-white shadow-2xl">
             <div class="flex items-center justify-between border-b px-6 py-4">
                 <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-edit mr-2 text-indigo-500"></i> Edit Tiket</h3>
@@ -25,21 +27,22 @@
             <form action="{{ route('admin.tickets.update', $ticket) }}" method="POST">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="ticket_form" value="edit-{{ $ticket->id }}">
 
                 <div class="space-y-4 p-6">
                     <label class="block text-left">
                         <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Nama Tiket</span>
-                        <input type="text" name="nama_kategori" value="{{ old('nama_kategori', $ticket->nama_kategori) }}" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <input type="text" name="nama_kategori" value="{{ $useOldInput ? old('nama_kategori') : $ticket->nama_kategori }}" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     </label>
 
                     <label class="block text-left">
                         <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Deskripsi</span>
-                        <textarea name="deskripsi" rows="3" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('deskripsi', $ticket->deskripsi) }}</textarea>
+                        <textarea name="deskripsi" rows="3" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ $useOldInput ? old('deskripsi') : $ticket->deskripsi }}</textarea>
                     </label>
 
                     <label class="block text-left">
                         <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Harga</span>
-                        <input type="number" name="harga" value="{{ old('harga', (int) $ticket->harga) }}" min="0" step="1000" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <input type="number" name="harga" value="{{ $useOldInput ? old('harga') : (int) $ticket->harga }}" min="0" step="1000" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     </label>
                 </div>
 

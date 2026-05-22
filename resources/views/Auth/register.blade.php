@@ -159,6 +159,15 @@
                     <p class="match-hint" id="matchHint"></p>
                 </div>
 
+                <div class="mb-3">
+                    {{-- reCAPTCHA --}}
+                    <div class="form-group form-group--recaptcha">
+                        <div class="g-recaptcha" data-sitekey="{{ env('RECAPTCHA_SITE_KEY') }}"></div>
+                        @error('g-recaptcha-response')
+                            <small class="text-danger">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div>
                 {{-- Terms --}}
                 <div class="form-check">
                     <label class="checkbox-label">
@@ -289,3 +298,5 @@
         crossorigin=""
     ></script>
 @endpush
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>

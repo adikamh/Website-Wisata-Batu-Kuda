@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Admin\Concerns\RecordsAdminActivity;
 use App\Models\Gallery;
 use App\Models\Komentar;
 use App\Models\LikeFoto;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Storage;
 
 class GalleryController extends Controller
 {
+    use RecordsAdminActivity;
+
     /**
      * Tampilkan halaman galeri utama dengan pagination, search, sort.
      */
@@ -111,6 +114,8 @@ class GalleryController extends Controller
             'gambar_url'  => $path,
         ]);
 
+        $this->recordAdminActivity('gallery_created', 'mengunggah foto galeri "' . $gallery->judul_foto . '"', $gallery);
+
         if ($request->expectsJson()) {
             return Response::json([
                 'message' => 'Foto berhasil diupload.',
@@ -152,6 +157,8 @@ class GalleryController extends Controller
         $gallery->update($payload);
         $gallery->refresh();
 
+        $this->recordAdminActivity('gallery_updated', 'memperbarui foto galeri "' . $gallery->judul_foto . '"', $gallery);
+
         if ($request->expectsJson()) {
             return Response::json([
                 'message' => 'Foto berhasil diperbarui.',
@@ -172,7 +179,11 @@ class GalleryController extends Controller
 
         $this->deleteLocalImage($gallery->gambar_url);
 
+        $deletedGalleryTitle = $gallery->judul_foto;
+
         $gallery->delete();
+
+        $this->recordAdminActivity('gallery_deleted', 'menghapus foto galeri "' . $deletedGalleryTitle . '"', $gallery);
 
         if ($request->expectsJson()) {
             return Response::json(['message' => 'Foto berhasil dihapus.']);

@@ -97,7 +97,7 @@
                         </div>
                     </li>
                 @empty
-                    <li class="rounded-lg bg-gray-50 px-4 py-5 text-sm text-gray-500">Belum ada aktivitas terbaru.</li>
+                    <li class="rounded-lg bg-gray-50 px-4 py-5 text-sm text-gray-500">Belum ada aktivitas admin terbaru.</li>
                 @endforelse
             </ul>
         </div>

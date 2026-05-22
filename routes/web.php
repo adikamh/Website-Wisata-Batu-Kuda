@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\AdminTicketController;
+use App\Http\Controllers\Admin\AdminRentalFacilityController;
+use App\Http\Controllers\Admin\DashboardContentController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Route;
@@ -9,6 +11,7 @@ use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\InfoWisataController;
+use App\Http\Controllers\GoogleAuthController;
 
 Route::get('/', [WisataController::class, 'dashboard'])->name('home');
 
@@ -39,6 +42,10 @@ Route::get('/reset-otp', [AuthController::class, 'showResetOtp'])->name('reset.o
 Route::post('/reset-otp', [AuthController::class, 'verifyResetOtp'])->name('reset.otp.submit');
 Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'updatePassword'])->name('password.update');
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+Route::get('/auth/google/complete', [GoogleAuthController::class, 'showCompletionForm'])->name('auth.google.complete');
+Route::post('/auth/google/complete', [GoogleAuthController::class, 'completeRegistration'])->name('auth.google.complete.submit');
 
 Route::middleware('auth')->group(function () {
     Route::get('dashboard', function () {
@@ -73,8 +80,14 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/tickets', [AdminTicketController::class, 'store'])->name('admin.tickets.store');
     Route::put('/tickets/{ticket}', [AdminTicketController::class, 'update'])->name('admin.tickets.update');
     Route::delete('/tickets/{ticket}', [AdminTicketController::class, 'destroy'])->name('admin.tickets.destroy');
+    Route::get('/fasilitas-sewa', [AdminRentalFacilityController::class, 'index'])->name('admin.facilities');
+    Route::post('/fasilitas-sewa', [AdminRentalFacilityController::class, 'store'])->name('admin.facilities.store');
+    Route::put('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'update'])->name('admin.facilities.update');
+    Route::delete('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'destroy'])->name('admin.facilities.destroy');
     Route::get('/reports/visitors.pdf', [AdminTicketController::class, 'downloadVisitorPdf'])->name('admin.reports.visitors.pdf');
     Route::get('/reports/finance.xls', [AdminTicketController::class, 'downloadFinanceExcel'])->name('admin.reports.finance.excel');
+        Route::post('/dashboard-content', [DashboardContentController::class, 'updateContent'])->name('admin.dashboard-content.update');
+        Route::get('/dashboard-content', [DashboardContentController::class, 'getContent'])->name('admin.dashboard-content.get');
 });
 
 Route::post('/chat', ChatbotController::class);
