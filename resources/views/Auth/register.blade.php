@@ -15,6 +15,7 @@
 @section('content')
 
 @php($authVisualImage = asset('images/about-main.jpeg'))
+@php($authLogoImage = asset('images/logo/favicon.png'))
 
 <div class="auth-layout register-layout">
 
@@ -24,12 +25,7 @@
 
             <div class="auth-header">
                 <div class="auth-icon register-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                        <line x1="19" y1="8" x2="23" y2="8"/>
-                        <line x1="21" y1="6" x2="21" y2="10"/>
-                    </svg>
+                    <img src="{{ $authLogoImage }}" alt="Logo Batu Kuda">
                 </div>
                 <h1>Buat Akun Baru</h1>
                 <p>Bergabung dan nikmati info wisata Batu Kuda</p>
@@ -212,9 +208,9 @@
 
         <div class="visual-content">
             <a href="{{ route('home') }}" class="visual-logo">
-                <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 30L13 13L20 23L25 15L32 30H4Z" fill="#74c69d" opacity="0.95"/>
-                    <path d="M20 7C20 7 27 10 25 20C23 16 19 15 18 11C17 15 14 17 12 20C10 11 18 5 20 7Z" fill="#b7e4c7"/>
+                <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:28px;">
+                    <path d="M4 26L12 12L18 20L22 14L28 26H4Z" fill="#74c69d" opacity="0.9"/>
+                    <path d="M18 8C18 8 24 10 22 18C20 15 17 14 16 11C15 14 13 16 11 18C9 10 16 6 18 8Z" fill="#b7e4c7"/>
                 </svg>
                 Batu Kuda
             </a>

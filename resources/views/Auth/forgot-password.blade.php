@@ -9,6 +9,7 @@
 @section('content')
 
 @php($authVisualImage = asset('images/login.jpeg'))
+@php($authLogoImage = asset('images/logo/favicon.png'))
 
 <div class="auth-layout">
     <div class="auth-visual">
@@ -19,9 +20,9 @@
 
         <div class="visual-content">
             <a href="{{ route('home') }}" class="visual-logo">
-                <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.wwww3.org/2000/svg">
-                    <path d="M4 30L13 13L20 23L25 15L32 30H4Z" fill="#74c69d" opacity="0.95"/>
-                    <path d="M20 7C20 7 27 10 25 20C23 16 19 15 18 11C17 15 14 17 12 20C10 11 18 5 20 7Z" fill="#b7e4c7"/>
+                <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:28px;">
+                    <path d="M4 26L12 12L18 20L22 14L28 26H4Z" fill="#74c69d" opacity="0.9"/>
+                    <path d="M18 8C18 8 24 10 22 18C20 15 17 14 16 11C15 14 13 16 11 18C9 10 16 6 18 8Z" fill="#b7e4c7"/>
                 </svg>
                 Batu Kuda
             </a>
@@ -54,11 +55,7 @@
         <div class="auth-form-wrap">
             <div class="auth-header">
                 <div class="auth-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                        <polyline points="10 17 15 12 10 7"/>
-                        <line x1="15" y1="12" x2="3" y2="12"/>
-                    </svg>
+                    <img src="{{ $authLogoImage }}" alt="Logo Batu Kuda">
                 </div>
                 <h1>Lupa Password</h1>
                 <p>Masukan email Anda dan kami akan kirimkan OTP untuk reset password</p>
