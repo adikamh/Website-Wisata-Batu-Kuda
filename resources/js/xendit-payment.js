@@ -6,7 +6,7 @@
 class XenditPayment {
     constructor(options = {}) {
         this.formSelector = options.formSelector || '.ticket-form';
-        this.buttonSelector = options.buttonSelector || '#ticketSubmitBtn';
+        this.buttonSelector = options.buttonSelector || '.ticket-submit';
         this.csrfTokenSelector = options.csrfTokenSelector || 'meta[name="csrf-token"]';
         this.apiEndpoint = options.apiEndpoint || '/xendit/create-payment';
         this.onSuccess = options.onSuccess || null;
@@ -55,20 +55,12 @@ class XenditPayment {
                 }
             });
 
-            const responseText = await createTxResponse.text();
-            console.log('Transaction response status:', createTxResponse.status);
-            console.log('Transaction response:', responseText);
-
-            let txData;
-            try {
-                txData = JSON.parse(responseText);
-            } catch (e) {
-                throw new Error(`Backend error (${createTxResponse.status}): ${responseText.substring(0, 200)}`);
-            }
-
             if (!createTxResponse.ok) {
-                throw new Error(txData.message || `Error: ${txData.errors || 'Unknown error'}`);
+                const error = await createTxResponse.json();
+                throw new Error(error.message || 'Gagal membuat transaksi');
             }
+
+            const txData = await createTxResponse.json();
 
             if (!txData.transaction_id) {
                 throw new Error('Transaksi berhasil dibuat tapi ID tidak ditemukan');
@@ -77,15 +69,11 @@ class XenditPayment {
             // Step 2: Create payment with Xendit
             const csrfToken = document.querySelector(this.csrfTokenSelector)?.content;
 
-            if (!csrfToken) {
-                throw new Error('CSRF token tidak ditemukan. Refresh halaman dan coba lagi.');
-            }
-
             const paymentResponse = await fetch(this.apiEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
+                    'X-CSRF-TOKEN': csrfToken || ''
                 },
                 body: JSON.stringify({
                     transaction_id: txData.transaction_id,
@@ -94,20 +82,12 @@ class XenditPayment {
                 })
             });
 
-            const paymentText = await paymentResponse.text();
-            console.log('Payment response status:', paymentResponse.status);
-            console.log('Payment response:', paymentText);
-
-            let paymentData;
-            try {
-                paymentData = JSON.parse(paymentText);
-            } catch (e) {
-                throw new Error(`Server error (${paymentResponse.status}): ${paymentText.substring(0, 300)}`);
-            }
-
             if (!paymentResponse.ok) {
-                throw new Error(paymentData.message || `Server error: ${paymentData.error_code || paymentResponse.status}`);
+                const error = await paymentResponse.json();
+                throw new Error(error.message || 'Gagal membuat invoice pembayaran');
             }
+
+            const paymentData = await paymentResponse.json();
 
             if (!paymentData.success) {
                 throw new Error(paymentData.message || 'Pembuatan invoice gagal');

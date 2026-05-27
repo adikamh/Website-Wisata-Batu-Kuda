@@ -1,11 +1,11 @@
 # Integrasi Xendit - Panduan Implementasi
 
 ## 1. Persiapan
-✅ Akun Xendit sudah dibuat (sandbox)
-✅ API Keys sudah ditambahkan ke `.env`
-✅ SDK Xendit sudah diinstal
-✅ Migration untuk kolom Xendit sudah dibuat
-✅ Controller, routes, dan config sudah siap
+Akun Xendit sudah dibuat (sandbox)
+API Keys sudah ditambahkan ke `.env`
+SDK Xendit sudah diinstal
+Migration untuk kolom Xendit sudah dibuat
+Controller, routes, dan config sudah siap
 
 ## 2. Update `.env` dengan Keys Anda
 
@@ -271,4 +271,3 @@ Contoh API calls:
 
 ---
 
-**Status**: ✅ Implementasi selesai, siap untuk testing dan deployment

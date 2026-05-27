@@ -10,17 +10,20 @@ class AdminUserSeeder extends Seeder
 {
     public function run()
     {
-        // Admin user
-        User::create([
-            'name' => 'Administrator',
-            'username' => 'admin',
-            'email' => 'batukuda@gmail.com',
-            'password' => Hash::make('batukuda123'),
-            'role' => 'admin',
-            'Phone' => '081234567890',
-            'Address' => 'Jl. Contoh No. 123, Kota Bandung',
-            'is_verified' => true,
-        ]);
+        // Admin user (avoid duplicate email crash)
+        User::updateOrCreate(
+            ['email' => 'batukuda@gmail.com'],
+            [
+                'name' => 'Administrator',
+                'username' => 'admin',
+                'password' => Hash::make('batukuda123'),
+                'role' => 'admin',
+                'Phone' => '081234567890',
+                'Address' => 'Jl. Contoh No. 123, Kota Bandung',
+                'is_verified' => true,
+            ]
+        );
+
 
         // User Joko Widodo
         User::create([

@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Pemesanan tiket Batu Kuda untuk kunjungan biasa dan camping.">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Tiket | Batu Kuda</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/xendit-payment.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
     @include('layout.navbar')
@@ -226,7 +225,7 @@
                             @enderror
                         </label>
 
-                        <button type="button" id="ticketSubmitBtn" class="btn-primary ticket-submit">Pesan Tiket Sekarang</button>
+                        <button type="submit" class="btn-primary ticket-submit">Pesan Tiket Sekarang</button>
                     </form>
                 </div>
 

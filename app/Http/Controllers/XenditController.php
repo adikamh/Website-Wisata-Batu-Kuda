@@ -13,24 +13,7 @@ class XenditController extends Controller
      */
     private function initXendit()
     {
-        $secretKey = config('services.xendit.secret_key');
-        
-        if (!$secretKey) {
-            throw new \Exception('XENDIT_SECRET_KEY not configured in .env');
-        }
-
-        Log::info('Initializing Xendit with key prefix', [
-            'key_prefix' => substr($secretKey, 0, 20) . '...'
-        ]);
-
-        try {
-            \Xendit\Xendit::setApiKey($secretKey);
-        } catch (\Exception $e) {
-            Log::error('Xendit initialization failed', [
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
+        \Xendit\Xendit::setApiKey(config('services.xendit.secret_key'));
     }
 
     /**
@@ -39,9 +22,6 @@ class XenditController extends Controller
     public function createPayment(Request $request)
     {
         try {
-            // Log request
-            Log::info('Xendit createPayment request', $request->all());
-
             $this->initXendit();
 
             // Validasi request
@@ -55,7 +35,6 @@ class XenditController extends Controller
 
             // Cek apakah invoice sudah dibuat
             if ($transaction->xendit_invoice_id) {
-                Log::info('Invoice already exists for transaction', ['id' => $transaction->id]);
                 return response()->json([
                     'success' => true,
                     'invoice_url' => $transaction->xendit_invoice_url,
@@ -66,18 +45,27 @@ class XenditController extends Controller
             // Generate external ID unik
             $externalId = 'order-' . $transaction->id . '-' . time();
 
-            Log::info('Creating invoice', [
-                'external_id' => $externalId,
-                'amount' => (int) $transaction->total_bayar,
-                'email' => $validated['customer_email'],
-            ]);
-
-            // Create invoice parameters (simplified)
+            // Create invoice parameters
             $invoiceParams = [
                 'external_id' => $externalId,
                 'amount' => (int) $transaction->total_bayar,
                 'payer_email' => $validated['customer_email'],
                 'description' => 'Pembelian Tiket Wisata Batu Kuda',
+                'customer' => [
+                    'given_names' => $validated['customer_name'],
+                    'email' => $validated['customer_email'],
+                ],
+                'items' => [
+                    [
+                        'name' => 'Tiket Masuk',
+                        'quantity' => 1,
+                        'price' => (int) $transaction->total_bayar,
+                    ]
+                ],
+                'fees' => [],
+                'currency' => 'IDR',
+                'success_redirect_url' => route('xendit.success'),
+                'failure_redirect_url' => route('xendit.failed'),
             ];
 
             // Create invoice
@@ -107,18 +95,13 @@ class XenditController extends Controller
         } catch (\Exception $e) {
             Log::error('Xendit payment creation failed', [
                 'error' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'class' => get_class($e),
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Return better error response
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membuat pembayaran: ' . $e->getMessage(),
-                'error_code' => $e->getCode(),
-                'debug_class' => config('app.debug') ? get_class($e) : null,
-            ], 500);
+            ], 400);
         }
     }
 
