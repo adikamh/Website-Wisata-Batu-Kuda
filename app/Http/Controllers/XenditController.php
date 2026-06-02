@@ -39,6 +39,9 @@ class XenditController extends Controller
     public function createPayment(Request $request)
     {
         try {
+            // Log request
+            Log::info('Xendit createPayment request', $request->all());
+
             $this->initXendit();
 
             // Validasi request
@@ -52,6 +55,7 @@ class XenditController extends Controller
 
             // Cek apakah invoice sudah dibuat
             if ($transaction->xendit_invoice_id) {
+                Log::info('Invoice already exists for transaction', ['id' => $transaction->id]);
                 return response()->json([
                     'success' => true,
                     'invoice_url' => $transaction->xendit_invoice_url,
@@ -106,13 +110,18 @@ class XenditController extends Controller
         } catch (\Exception $e) {
             Log::error('Xendit payment creation failed', [
                 'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'class' => get_class($e),
                 'trace' => $e->getTraceAsString(),
             ]);
 
+            // Return better error response
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membuat pembayaran: ' . $e->getMessage(),
-            ], 400);
+                'error_code' => $e->getCode(),
+                'debug_class' => config('app.debug') ? get_class($e) : null,
+            ], 500);
         }
     }
 
