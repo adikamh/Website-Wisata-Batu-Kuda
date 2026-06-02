@@ -113,12 +113,18 @@ class XenditPayment {
                 throw new Error(paymentData.message || 'Pembuatan invoice gagal');
             }
 
+            const redirectUrl = paymentData.redirect_url || paymentData.invoice_url;
+
+            if (!redirectUrl) {
+                throw new Error('Tidak ada URL invoice yang diterima dari server');
+            }
+
             // Step 3: Success callback or redirect
             if (this.onSuccess) {
                 this.onSuccess(paymentData);
             } else {
                 // Default: redirect to Xendit invoice
-                window.location.href = paymentData.redirect_url;
+                window.location.href = redirectUrl;
             }
 
         } catch (error) {

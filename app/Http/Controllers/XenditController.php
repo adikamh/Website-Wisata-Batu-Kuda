@@ -24,7 +24,7 @@ class XenditController extends Controller
         ]);
 
         try {
-            \Xendit\Xendit::setApiKey($secretKey);
+            \Xendit\Configuration::setXenditKey($secretKey);
         } catch (\Exception $e) {
             Log::error('Xendit initialization failed', [
                 'error' => $e->getMessage(),
@@ -59,6 +59,7 @@ class XenditController extends Controller
                 return response()->json([
                     'success' => true,
                     'invoice_url' => $transaction->xendit_invoice_url,
+                    'redirect_url' => $transaction->xendit_invoice_url,
                     'message' => 'Invoice sudah dibuat sebelumnya',
                 ]);
             }
@@ -72,16 +73,18 @@ class XenditController extends Controller
                 'email' => $validated['customer_email'],
             ]);
 
-            // Create invoice parameters (simplified)
-            $invoiceParams = [
-                'external_id' => $externalId,
-                'amount' => (int) $transaction->total_bayar,
-                'payer_email' => $validated['customer_email'],
-                'description' => 'Pembelian Tiket Wisata Batu Kuda',
-            ];
+            // Create invoice request
+            $invoiceRequest = new \Xendit\Invoice\CreateInvoiceRequest();
+            $invoiceRequest->setExternalId($externalId);
+            $invoiceRequest->setAmount((float) $transaction->total_bayar);
+            $invoiceRequest->setPayerEmail($validated['customer_email']);
+            $invoiceRequest->setDescription('Pembelian Tiket Wisata Batu Kuda');
+            $invoiceRequest->setSuccessRedirectUrl(route('xendit.success'));
+            $invoiceRequest->setFailureRedirectUrl(route('xendit.failed'));
 
             // Create invoice
-            $invoice = \Xendit\Invoice::create($invoiceParams);
+            $invoiceApi = new \Xendit\Invoice\InvoiceApi();
+            $invoice = $invoiceApi->createInvoice($invoiceRequest);
 
             // Simpan ke database
             $transaction->update([
@@ -141,13 +144,16 @@ class XenditController extends Controller
                 ], 401);
             }
 
+            // Determine Xendit event type
+            $eventType = $payload['event'] ?? $payload['type'] ?? null;
+
             // Handle invoice notification
-            if (isset($payload['event']) && $payload['event'] === 'invoice.paid') {
+            if ($eventType === 'invoice.paid') {
                 return $this->handleInvoicePaid($payload);
             }
 
             // Handle expired invoice
-            if (isset($payload['event']) && $payload['event'] === 'invoice.expired') {
+            if ($eventType === 'invoice.expired') {
                 return $this->handleInvoiceExpired($payload);
             }
 
@@ -285,9 +291,24 @@ class XenditController extends Controller
                 'external_id' => 'required|string',
             ]);
 
-            $invoice = \Xendit\Invoice::retrieve([
-                'external_id' => $validated['external_id'],
-            ]);
+            $transaction = Transaction::where('xendit_external_id', $validated['external_id'])->first();
+
+            if (! $transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi Xendit tidak ditemukan',
+                ], 404);
+            }
+
+            if (! $transaction->xendit_invoice_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invoice Xendit belum dibuat untuk transaksi ini',
+                ], 404);
+            }
+
+            $invoiceApi = new \Xendit\Invoice\InvoiceApi();
+            $invoice = $invoiceApi->getInvoiceById($transaction->xendit_invoice_id);
 
             return response()->json([
                 'success' => true,
