@@ -8,7 +8,17 @@ class Transaction extends Model
 {
     protected $table = 'transactions';
     
-    protected $fillable = ['user_id', 'total_bayar', 'status_pembayaran', 'payment_method', 'snap_token_midtrans'];
+    protected $fillable = [
+        'user_id',
+        'total_bayar',
+        'status_pembayaran',
+        'payment_method',
+        'snap_token_midtrans',
+        'xendit_invoice_id',
+        'xendit_external_id',
+        'xendit_invoice_url',
+        'xendit_response',
+    ];
 
     public function user()
     {

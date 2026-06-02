@@ -16,6 +16,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -67,22 +68,29 @@ class WisataController
 
     public function storeTiket(Request $request)
     {
-        if (! Auth::check()) {
-            return redirect()
-                ->route('login')
-                ->with('status', 'Silakan login terlebih dahulu untuk memesan tiket.');
-        }
+        try {
+            if (! Auth::check()) {
+                if ($request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Silakan login terlebih dahulu untuk memesan tiket.',
+                    ], 401);
+                }
+                return redirect()
+                    ->route('login')
+                    ->with('status', 'Silakan login terlebih dahulu untuk memesan tiket.');
+            }
 
-        $ticketPackages = $this->ticketPackages();
-        $paymentOptions = $this->paymentOptions();
-        $validated = $request->validate([
-            'phone' => ['nullable', 'string', 'max:20'],
-            'ticket_category_id' => ['required', Rule::in(array_keys($ticketPackages))],
-            'visitor_count' => ['required', 'integer', 'min:1', 'max:20'],
-            'visit_date' => ['required', 'date', 'after_or_equal:today'],
-            'camping_end_date' => ['required', 'date', 'after_or_equal:visit_date'],
-            'payment_category' => ['required', Rule::in(array_keys($paymentOptions))],
-            'payment_method' => ['required', 'string', 'max:50'],
+            $ticketPackages = $this->ticketPackages();
+            $paymentOptions = $this->paymentOptions();
+            $validated = $request->validate([
+                'phone' => ['nullable', 'string', 'max:20'],
+                'ticket_category_id' => ['required', Rule::in(array_keys($ticketPackages))],
+                'visitor_count' => ['required', 'integer', 'min:1', 'max:20'],
+                'visit_date' => ['required', 'date', 'after_or_equal:today'],
+                'camping_end_date' => ['required', 'date', 'after_or_equal:visit_date'],
+                'payment_category' => ['required', Rule::in(array_keys($paymentOptions))],
+                'payment_method' => ['required', 'string', 'max:50'],
             'rental_quantities' => ['nullable', 'array'],
             'rental_quantities.*' => ['nullable', 'integer', 'min:0', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -204,6 +212,24 @@ class WisataController
             return $transaction;
         });
 
+        // Return JSON for AJAX requests (payment integration)
+        if ($request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Pesanan tiket berhasil dibuat.',
+                'transaction_id' => $transaction->id,
+                'name' => Auth::user()->name,
+                'email' => Auth::user()->email,
+                'ticket_code' => $ticketCode,
+                'package_name' => $package['name'],
+                'visitor_count' => $visitorCount,
+                'payment_method_label' => $paymentMethodLabel,
+                'rental_items' => $rentalSummary->values()->all(),
+                'total_bayar' => (int) $transaction->total_bayar,
+            ], 201);
+        }
+
+        // Redirect for normal form submission
         return redirect()
             ->route('tiket')
             ->with('status', 'Pesanan tiket berhasil dibuat.')
@@ -216,6 +242,22 @@ class WisataController
                 'rental_items' => $rentalSummary->values()->all(),
                 'total_bayar' => (int) $transaction->total_bayar,
             ]);
+        } catch (\Exception $e) {
+            Log::error('Ticket creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            if ($request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage() ?: 'Gagal membuat pesanan tiket',
+                    'errors' => config('app.debug') ? $e->getTrace() : null,
+                ], 400);
+            }
+
+            return back()->withInput()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     private function ticketPackages(): array
