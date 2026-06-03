@@ -1,4 +1,5 @@
 import '../css/app.css';
+import './scroll-restore';
 
 // Alpine.js or vanilla JS interactions
 document.addEventListener('DOMContentLoaded', () => {

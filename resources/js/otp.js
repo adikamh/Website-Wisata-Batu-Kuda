@@ -1,3 +1,5 @@
+import './scroll-restore';
+
 document.addEventListener('DOMContentLoaded', () => {
     const otpInput = document.getElementById('otp');
     const form = document.getElementById('otpForm');

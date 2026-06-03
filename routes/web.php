@@ -87,7 +87,9 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::put('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'update'])->name('admin.facilities.update');
     Route::delete('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'destroy'])->name('admin.facilities.destroy');
     Route::get('/reports/visitors.pdf', [AdminTicketController::class, 'downloadVisitorPdf'])->name('admin.reports.visitors.pdf');
+    Route::post('/reports/visitors.pdf/email', [AdminTicketController::class, 'emailVisitorPdf'])->name('admin.reports.visitors.email');
     Route::get('/reports/finance.xls', [AdminTicketController::class, 'downloadFinanceExcel'])->name('admin.reports.finance.excel');
+    Route::post('/reports/finance.xls/email', [AdminTicketController::class, 'emailFinanceExcel'])->name('admin.reports.finance.email');
         Route::post('/dashboard-content', [DashboardContentController::class, 'updateContent'])->name('admin.dashboard-content.update');
         Route::get('/dashboard-content', [DashboardContentController::class, 'getContent'])->name('admin.dashboard-content.get');
 });

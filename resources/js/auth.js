@@ -1,3 +1,5 @@
+import './scroll-restore';
+
 document.addEventListener('DOMContentLoaded', () => {
     const registerForm = document.getElementById('registerForm');
 

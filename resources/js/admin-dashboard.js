@@ -1,3 +1,5 @@
+import './scroll-restore';
+
 document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.getElementById('adminSidebar');
     const mainContent = document.getElementById('adminMain');
@@ -19,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleButton?.setAttribute('aria-expanded', String(!collapsed));
 
         if (toggleIcon) {
-            toggleIcon.textContent = collapsed ? '▶' : '◀';
+            toggleIcon.textContent = collapsed ? '>' : '<';
         }
 
         try {
@@ -35,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleButton?.setAttribute('aria-expanded', 'false');
 
         if (toggleIcon) {
-            toggleIcon.textContent = '▶';
+            toggleIcon.textContent = '>';
         }
 
         setOverlay(false);

@@ -3,15 +3,26 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+<<<<<<< HEAD
+=======
+use App\Mail\AdminReportMail;
+use App\Models\AdminActivity;
+>>>>>>> 0f37d79327f37c38d56b9f4fcf39b1fd80c4e806
 use App\Models\TiketKategori;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
 use App\Models\Wisata;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+<<<<<<< HEAD
+=======
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
+>>>>>>> 0f37d79327f37c38d56b9f4fcf39b1fd80c4e806
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -120,10 +131,15 @@ class AdminTicketController extends Controller
         $transactionFilters = [
             'search' => trim((string) $request->query('search', '')),
             'approval_status' => $request->query('approval_status', 'all'),
+            'per_page' => (int) $request->query('per_page', 10),
         ];
 
         if (! in_array($transactionFilters['approval_status'], ['all', 'pending', 'success'], true)) {
             $transactionFilters['approval_status'] = 'all';
+        }
+
+        if (! in_array($transactionFilters['per_page'], [10, 25, 50], true)) {
+            $transactionFilters['per_page'] = 10;
         }
 
         $transactions = Transaction::query()
@@ -142,8 +158,8 @@ class AdminTicketController extends Controller
             })
             ->when($transactionFilters['approval_status'] !== 'all', fn ($query) => $query->where('status_pembayaran', $transactionFilters['approval_status']))
             ->latest()
-            ->limit(10)
-            ->get();
+            ->paginate($transactionFilters['per_page'])
+            ->withQueryString();
 
         return view('Admin.tickets.index', compact('tickets', 'transactions', 'transactionFilters'));
     }
@@ -260,32 +276,19 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
+<<<<<<< HEAD
         $lines = [
             'LAPORAN DAFTAR PENGUNJUNG BATU KUDA',
             'Dicetak: ' . now()->format('d/m/Y H:i'),
             '',
         ];
+=======
+        $this->recordAdminActivity('visitor_report_downloaded', 'mengunduh laporan daftar pengunjung');
 
-        foreach ($this->reportTransactions() as $transaction) {
-            $detail = $transaction->details->first();
-            $lines[] = 'Resi: INV-' . str_pad($transaction->id, 6, '0', STR_PAD_LEFT);
-            $lines[] = 'Nama: ' . ($transaction->user->name ?? '-');
-            $lines[] = 'Email: ' . ($transaction->user->email ?? '-');
-            $lines[] = 'Tiket: ' . ($detail?->tiketKategori?->nama_kategori ?? '-');
-            $lines[] = 'Jumlah: ' . ($detail->quantity ?? 0) . ' orang';
-            $lines[] = 'Tanggal Masuk: ' . ($detail?->start_date?->format('d/m/Y') ?? '-');
-            $lines[] = 'Tanggal Keluar: ' . ($detail?->end_date?->format('d/m/Y') ?? '-');
-            $lines[] = 'Status: ' . strtoupper($transaction->status_pembayaran);
-            $lines[] = str_repeat('-', 72);
-        }
+        $filename = $this->reportFilename('laporan-daftar-pengunjung', 'pdf');
+>>>>>>> 0f37d79327f37c38d56b9f4fcf39b1fd80c4e806
 
-        if (count($lines) === 3) {
-            $lines[] = 'Belum ada data pengunjung.';
-        }
-
-        $filename = 'laporan-daftar-pengunjung-' . now()->format('Ymd-His') . '.pdf';
-
-        return response($this->makeSimplePdf($lines), 200, [
+        return response($this->visitorPdfContent($this->visitorReportPayload()), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
@@ -295,14 +298,111 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
+<<<<<<< HEAD
         $transactions = $this->reportTransactions();
         $totalRevenue = $transactions->sum('total_bayar');
         $filename = 'laporan-keuangan-' . now()->format('Ymd-His') . '.xls';
+=======
+        $this->recordAdminActivity('finance_report_downloaded', 'mengunduh laporan keuangan');
+
+        $filename = $this->reportFilename('laporan-keuangan', 'xls');
+>>>>>>> 0f37d79327f37c38d56b9f4fcf39b1fd80c4e806
 
         return response()
-            ->view('Admin.tickets.reports-excel', compact('transactions', 'totalRevenue'))
+            ->view('Admin.tickets.reports-excel', $this->financeReportPayload())
             ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    public function emailVisitorPdf()
+    {
+        $this->authorizeAdmin();
+
+        $filename = $this->reportFilename('laporan-daftar-pengunjung', 'pdf');
+
+        $this->sendReportEmail(
+            'Laporan Daftar Pengunjung Batu Kuda',
+            'Terlampir laporan daftar pengunjung Batu Kuda yang Anda minta dari admin dashboard.',
+            $filename,
+            $this->visitorPdfContent($this->visitorReportPayload()),
+            'application/pdf'
+        );
+
+        $this->recordAdminActivity('visitor_report_emailed', 'mengirim laporan daftar pengunjung ke email admin');
+
+        return $this->redirectToTickets('Laporan daftar pengunjung berhasil dikirim ke email admin yang login.');
+    }
+
+    public function emailFinanceExcel()
+    {
+        $this->authorizeAdmin();
+
+        $filename = $this->reportFilename('laporan-keuangan', 'xls');
+
+        $this->sendReportEmail(
+            'Laporan Keuangan Batu Kuda',
+            'Terlampir laporan keuangan Batu Kuda yang Anda minta dari admin dashboard.',
+            $filename,
+            view('Admin.tickets.reports-excel', $this->financeReportPayload())->render(),
+            'application/vnd.ms-excel'
+        );
+
+        $this->recordAdminActivity('finance_report_emailed', 'mengirim laporan keuangan ke email admin');
+
+        return $this->redirectToTickets('Laporan keuangan berhasil dikirim ke email admin yang login.');
+    }
+
+    private function visitorReportPayload(): array
+    {
+        return [
+            ...$this->reportExportContext(),
+            'transactions' => $this->reportTransactions(),
+        ];
+    }
+
+    private function financeReportPayload(): array
+    {
+        $transactions = $this->reportTransactions();
+
+        return [
+            ...$this->reportExportContext(),
+            'transactions' => $transactions,
+            'totalRevenue' => $transactions->sum('total_bayar'),
+        ];
+    }
+
+    private function reportExportContext(): array
+    {
+        $admin = Auth::user();
+        $exportedByUsername = $admin?->username ?: ($admin?->name ?: ($admin?->email ?: 'admin'));
+
+        return [
+            'printedAt' => now(),
+            'exportedBy' => $admin,
+            'exportedByUsername' => $exportedByUsername,
+            'watermarkText' => 'Diekspor oleh: ' . $exportedByUsername,
+        ];
+    }
+
+    private function visitorPdfContent(array $payload): string
+    {
+        return Pdf::loadView('Admin.tickets.reports-visitors-pdf', $payload)
+            ->setPaper('a4', 'landscape')
+            ->output();
+    }
+
+    private function reportFilename(string $prefix, string $extension): string
+    {
+        return $prefix . '-' . now()->format('Ymd-His') . '.' . $extension;
+    }
+
+    private function sendReportEmail(string $subject, string $body, string $filename, string $content, string $mime): void
+    {
+        $admin = Auth::user();
+
+        abort_if(blank($admin?->email), 422, 'Email admin yang sedang login belum tersedia.');
+
+        Mail::to($admin->email)->send(new AdminReportMail($subject, $body, $filename, $content, $mime));
     }
 
     private function validateTicket(Request $request): array
@@ -362,6 +462,7 @@ class AdminTicketController extends Controller
             ->get();
     }
 
+<<<<<<< HEAD
     private function makeSimplePdf(array $lines): string
     {
         $objects = [];
@@ -412,6 +513,32 @@ class AdminTicketController extends Controller
     private function escapePdfText(string $text): string
     {
         return str_replace(['\\', '(', ')'], ['\\\\', '\(', '\)'], $text);
+=======
+    private function recentAdminActivities()
+    {
+        try {
+            if (! Schema::hasTable('admin_activities')) {
+                return collect();
+            }
+
+            return AdminActivity::query()
+                ->latest()
+                ->limit(5)
+                ->get()
+                ->map(fn (AdminActivity $activity) => [
+                    'icon' => $activity->icon ?: 'fa-clipboard-list',
+                    'icon_bg' => $activity->icon_bg ?: 'bg-gray-100',
+                    'icon_text' => $activity->icon_text ?: 'text-gray-600',
+                    'title' => $activity->title ?: $activity->admin_name,
+                    'description' => $activity->description,
+                    'time' => $activity->created_at,
+                ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return collect();
+        }
+>>>>>>> 0f37d79327f37c38d56b9f4fcf39b1fd80c4e806
     }
 
     private function redirectToTickets(string $message)
