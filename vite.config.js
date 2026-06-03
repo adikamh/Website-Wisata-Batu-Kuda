@@ -28,6 +28,7 @@ export default defineConfig({
                 'resources/css/kanvas-dashboard.css',
                 'resources/js/kanvas-dashboard.js',
                 'resources/css/otp.css',
+                'resources/js/xendit-payment.js',
             ],
             refresh: true,
         }),

@@ -30,6 +30,9 @@ class XenditPayment {
     }
 
     async handlePayment(form) {
+        const button = document.querySelector(this.buttonSelector);
+        const originalText = button?.textContent || 'Pesan Tiket Sekarang';
+
         try {
             // Validate form
             if (!form.checkValidity()) {
@@ -37,9 +40,9 @@ class XenditPayment {
                 return;
             }
 
-            // Get button
-            const button = document.querySelector(this.buttonSelector);
-            const originalText = button.textContent;
+            if (!button) {
+                throw new Error('Tombol pembayaran tidak ditemukan. Refresh halaman dan coba lagi.');
+            }
 
             // Disable button and show loading
             button.disabled = true;
@@ -51,6 +54,7 @@ class XenditPayment {
                 method: 'POST',
                 body: formData,
                 headers: {
+                    'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
@@ -84,7 +88,9 @@ class XenditPayment {
             const paymentResponse = await fetch(this.apiEndpoint, {
                 method: 'POST',
                 headers: {
+                    'Accept': 'application/json',
                     'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': csrfToken
                 },
                 body: JSON.stringify({
@@ -140,8 +146,11 @@ class XenditPayment {
         } finally {
             // Re-enable button
             const button = document.querySelector(this.buttonSelector);
-            button.disabled = false;
-            button.textContent = originalText || 'Pesan Tiket Sekarang';
+
+            if (button) {
+                button.disabled = false;
+                button.textContent = originalText;
+            }
         }
     }
 

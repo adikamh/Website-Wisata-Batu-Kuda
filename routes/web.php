@@ -81,6 +81,7 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/tickets', [AdminTicketController::class, 'store'])->name('admin.tickets.store');
     Route::put('/tickets/{ticket}', [AdminTicketController::class, 'update'])->name('admin.tickets.update');
     Route::delete('/tickets/{ticket}', [AdminTicketController::class, 'destroy'])->name('admin.tickets.destroy');
+    Route::post('/transactions/{transaction}/approve', [AdminTicketController::class, 'approveTransaction'])->name('admin.transactions.approve');
     Route::get('/fasilitas-sewa', [AdminRentalFacilityController::class, 'index'])->name('admin.facilities');
     Route::post('/fasilitas-sewa', [AdminRentalFacilityController::class, 'store'])->name('admin.facilities.store');
     Route::put('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'update'])->name('admin.facilities.update');

@@ -25,7 +25,7 @@ class XenditController extends Controller
 
         try {
             \Xendit\Configuration::setXenditKey($secretKey);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Xendit initialization failed', [
                 'error' => $e->getMessage(),
             ]);
@@ -107,7 +107,7 @@ class XenditController extends Controller
                 'redirect_url' => $invoice['invoice_url'],
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Xendit payment creation failed', [
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
@@ -159,7 +159,7 @@ class XenditController extends Controller
 
             return response()->json(['success' => true]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Webhook processing failed', [
                 'error' => $e->getMessage(),
             ]);
@@ -201,7 +201,7 @@ class XenditController extends Controller
 
             return response()->json(['success' => true]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Error handling paid invoice', [
                 'error' => $e->getMessage(),
             ]);
@@ -239,7 +239,7 @@ class XenditController extends Controller
 
             return response()->json(['success' => true]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Error handling expired invoice', [
                 'error' => $e->getMessage(),
             ]);
@@ -316,7 +316,7 @@ class XenditController extends Controller
                 'data' => $invoice,
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to check payment status', [
                 'error' => $e->getMessage(),
             ]);
