@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\AdminReportMail;
 use App\Models\AdminActivity;
 use App\Models\TiketKategori;
 use App\Models\Transaction;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Models\Wisata;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class AdminDashboardActivityTest extends TestCase
@@ -280,7 +282,29 @@ class AdminDashboardActivityTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.tickets'))
             ->assertOk()
-            ->assertViewHas('transactions', fn ($transactions) => $transactions->count() === 10);
+            ->assertViewHas('transactions', fn ($transactions) => $transactions->count() === 10
+                && $transactions->perPage() === 10
+                && $transactions->total() === 13
+                && $transactions->hasMorePages());
+
+        $this->actingAs($admin)
+            ->get(route('admin.tickets', [
+                'per_page' => 25,
+            ]))
+            ->assertOk()
+            ->assertViewHas('transactions', fn ($transactions) => $transactions->count() === 13
+                && $transactions->perPage() === 25
+                && $transactions->currentPage() === 1
+                && ! $transactions->hasMorePages());
+
+        $this->actingAs($admin)
+            ->get(route('admin.tickets', [
+                'page' => 2,
+            ]))
+            ->assertOk()
+            ->assertViewHas('transactions', fn ($transactions) => $transactions->count() === 3
+                && $transactions->currentPage() === 2
+                && ! $transactions->onFirstPage());
 
         $this->actingAs($admin)
             ->get(route('admin.tickets', [
@@ -299,5 +323,39 @@ class AdminDashboardActivityTest extends TestCase
             ->assertOk()
             ->assertViewHas('transactions', fn ($transactions) => $transactions->count() === 1
                 && $transactions->first()->is($pendingTransaction));
+    }
+
+    public function test_admin_report_exports_include_watermark_and_can_be_emailed(): void
+    {
+        $admin = User::factory()->create([
+            'name' => 'Admin Reports',
+            'username' => 'admin_reports',
+            'role' => 'admin',
+            'is_verified' => true,
+        ]);
+
+        Mail::fake();
+
+        $excelResponse = $this->actingAs($admin)
+            ->get(route('admin.reports.finance.excel'))
+            ->assertOk();
+
+        $excelResponse->assertSee('Diekspor oleh: admin_reports', false);
+
+        $pdfResponse = $this->actingAs($admin)
+            ->get(route('admin.reports.visitors.pdf'))
+            ->assertOk();
+
+        $this->assertStringStartsWith('%PDF', $pdfResponse->getContent());
+
+        $this->actingAs($admin)
+            ->post(route('admin.reports.visitors.email'))
+            ->assertRedirect(route('admin.tickets'));
+
+        $this->actingAs($admin)
+            ->post(route('admin.reports.finance.email'))
+            ->assertRedirect(route('admin.tickets'));
+
+        Mail::assertSent(AdminReportMail::class, 2);
     }
 }

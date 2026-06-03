@@ -59,7 +59,9 @@
                         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                             <div>
                                 <h3 class="text-base font-bold text-gray-700">Tiket yang Sudah Dibeli</h3>
-                                <p class="mt-1 text-xs text-gray-500">Menampilkan maksimal 10 transaksi terbaru.</p>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Menampilkan {{ $transactions->firstItem() ?? 0 }}-{{ $transactions->lastItem() ?? 0 }} dari {{ $transactions->total() }} transaksi.
+                                </p>
                             </div>
 
                             <form id="transactionFilterForm" action="{{ route('admin.tickets') }}" method="GET" class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
@@ -82,6 +84,15 @@
                                         <option value="all" @selected(($transactionFilters['approval_status'] ?? 'all') === 'all')>Semua Status</option>
                                         <option value="pending" @selected(($transactionFilters['approval_status'] ?? 'all') === 'pending')>Belum di-approve</option>
                                         <option value="success" @selected(($transactionFilters['approval_status'] ?? 'all') === 'success')>Sudah di-approve</option>
+                                    </select>
+                                </label>
+
+                                <label class="sm:w-36">
+                                    <span class="sr-only">Jumlah data per halaman</span>
+                                    <select name="per_page" id="transactionPerPage" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        <option value="10" @selected(($transactionFilters['per_page'] ?? 10) === 10)>10 data</option>
+                                        <option value="25" @selected(($transactionFilters['per_page'] ?? 10) === 25)>25 data</option>
+                                        <option value="50" @selected(($transactionFilters['per_page'] ?? 10) === 50)>50 data</option>
                                     </select>
                                 </label>
                             </form>
@@ -151,6 +162,38 @@
                                 @endforelse
                             </tbody>
                         </table>
+                    </div>
+
+                    <div class="flex flex-col gap-3 border-t bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="text-sm text-gray-500">
+                            Menampilkan {{ $transactions->firstItem() ?? 0 }} sampai {{ $transactions->lastItem() ?? 0 }} dari {{ $transactions->total() }} transaksi
+                        </p>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            @if ($transactions->onFirstPage())
+                                <span class="inline-flex cursor-not-allowed items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-400">
+                                    <i class="fas fa-chevron-left mr-2 text-xs"></i> Previous
+                                </span>
+                            @else
+                                <a href="{{ $transactions->previousPageUrl() }}" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
+                                    <i class="fas fa-chevron-left mr-2 text-xs"></i> Previous
+                                </a>
+                            @endif
+
+                            <span class="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700">
+                                Halaman {{ $transactions->currentPage() }} dari {{ $transactions->lastPage() }}
+                            </span>
+
+                            @if ($transactions->hasMorePages())
+                                <a href="{{ $transactions->nextPageUrl() }}" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
+                                    Next <i class="fas fa-chevron-right ml-2 text-xs"></i>
+                                </a>
+                            @else
+                                <span class="inline-flex cursor-not-allowed items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-400">
+                                    Next <i class="fas fa-chevron-right ml-2 text-xs"></i>
+                                </span>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -330,6 +373,7 @@
             const transactionFilterForm = document.getElementById('transactionFilterForm');
             const transactionSearchInput = document.getElementById('transactionSearchInput');
             const transactionApprovalStatus = document.getElementById('transactionApprovalStatus');
+            const transactionPerPage = document.getElementById('transactionPerPage');
             let transactionSearchTimer;
 
             function submitTransactionFilters() {
@@ -346,6 +390,11 @@
             });
 
             transactionApprovalStatus?.addEventListener('change', function () {
+                clearTimeout(transactionSearchTimer);
+                submitTransactionFilters();
+            });
+
+            transactionPerPage?.addEventListener('change', function () {
                 clearTimeout(transactionSearchTimer);
                 submitTransactionFilters();
             });

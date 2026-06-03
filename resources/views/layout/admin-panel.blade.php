@@ -13,7 +13,7 @@
             aria-label="Toggle sidebar"
             aria-expanded="true"
         >
-            <span class="sidebar-edge-icon" aria-hidden="true">◀</span>
+            <span class="sidebar-edge-icon" aria-hidden="true">&gt;</span>
         </button>
 
         <div id="adminMain" class="main-content">

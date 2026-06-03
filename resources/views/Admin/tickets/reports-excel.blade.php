@@ -3,15 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <title>Laporan Keuangan Batu Kuda</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+
+        .watermark {
+            color: #d1d5db;
+            font-size: 42px;
+            font-weight: 700;
+            left: 80px;
+            opacity: 0.24;
+            position: absolute;
+            text-align: center;
+            top: 130px;
+            transform: rotate(-24deg);
+            width: 900px;
+            z-index: 0;
+        }
+
+        table {
+            position: relative;
+            z-index: 1;
+        }
+
+        th {
+            background-color: #e8f5e9;
+            font-weight: bold;
+        }
+
+        .watermark-row {
+            color: #9ca3af;
+            font-size: 18px;
+        }
+    </style>
 </head>
 <body>
+    <div class="watermark">{{ $watermarkText }}</div>
+
     <table border="1">
         <thead>
             <tr>
                 <th colspan="12">Laporan Keuangan Batu Kuda</th>
             </tr>
             <tr>
-                <th colspan="12">Dicetak: {{ now()->format('d/m/Y H:i') }}</th>
+                <th colspan="12">Dicetak: {{ $printedAt->format('d/m/Y H:i') }}</th>
+            </tr>
+            <tr>
+                <th colspan="12" class="watermark-row">Diekspor oleh: {{ $exportedByUsername }}</th>
             </tr>
             <tr>
                 <th>Tanggal Masuk</th>

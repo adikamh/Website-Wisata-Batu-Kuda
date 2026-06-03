@@ -4,16 +4,19 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\RecordsAdminActivity;
 use App\Http\Controllers\Controller;
+use App\Mail\AdminReportMail;
 use App\Models\AdminActivity;
 use App\Models\TiketKategori;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
 use App\Models\Wisata;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -91,10 +94,15 @@ class AdminTicketController extends Controller
         $transactionFilters = [
             'search' => trim((string) $request->query('search', '')),
             'approval_status' => $request->query('approval_status', 'all'),
+            'per_page' => (int) $request->query('per_page', 10),
         ];
 
         if (! in_array($transactionFilters['approval_status'], ['all', 'pending', 'success'], true)) {
             $transactionFilters['approval_status'] = 'all';
+        }
+
+        if (! in_array($transactionFilters['per_page'], [10, 25, 50], true)) {
+            $transactionFilters['per_page'] = 10;
         }
 
         $transactions = Transaction::query()
@@ -113,8 +121,8 @@ class AdminTicketController extends Controller
             })
             ->when($transactionFilters['approval_status'] !== 'all', fn ($query) => $query->where('status_pembayaran', $transactionFilters['approval_status']))
             ->latest()
-            ->limit(10)
-            ->get();
+            ->paginate($transactionFilters['per_page'])
+            ->withQueryString();
 
         return view('Admin.tickets.index', compact('tickets', 'transactions', 'transactionFilters'));
     }
@@ -249,32 +257,9 @@ class AdminTicketController extends Controller
 
         $this->recordAdminActivity('visitor_report_downloaded', 'mengunduh laporan daftar pengunjung');
 
-        $lines = [
-            'LAPORAN DAFTAR PENGUNJUNG BATU KUDA',
-            'Dicetak: ' . now()->format('d/m/Y H:i'),
-            '',
-        ];
+        $filename = $this->reportFilename('laporan-daftar-pengunjung', 'pdf');
 
-        foreach ($this->reportTransactions() as $transaction) {
-            $detail = $transaction->details->first();
-            $lines[] = 'Resi: INV-' . str_pad($transaction->id, 6, '0', STR_PAD_LEFT);
-            $lines[] = 'Nama: ' . ($transaction->user->name ?? '-');
-            $lines[] = 'Email: ' . ($transaction->user->email ?? '-');
-            $lines[] = 'Tiket: ' . ($detail?->tiketKategori?->nama_kategori ?? '-');
-            $lines[] = 'Jumlah: ' . ($detail->quantity ?? 0) . ' orang';
-            $lines[] = 'Tanggal Masuk: ' . ($detail?->start_date?->format('d/m/Y') ?? '-');
-            $lines[] = 'Tanggal Keluar: ' . ($detail?->end_date?->format('d/m/Y') ?? '-');
-            $lines[] = 'Status: ' . strtoupper($transaction->status_pembayaran);
-            $lines[] = str_repeat('-', 72);
-        }
-
-        if (count($lines) === 3) {
-            $lines[] = 'Belum ada data pengunjung.';
-        }
-
-        $filename = 'laporan-daftar-pengunjung-' . now()->format('Ymd-His') . '.pdf';
-
-        return response($this->makeSimplePdf($lines), 200, [
+        return response($this->visitorPdfContent($this->visitorReportPayload()), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
@@ -286,14 +271,103 @@ class AdminTicketController extends Controller
 
         $this->recordAdminActivity('finance_report_downloaded', 'mengunduh laporan keuangan');
 
-        $transactions = $this->reportTransactions();
-        $totalRevenue = $transactions->sum('total_bayar');
-        $filename = 'laporan-keuangan-' . now()->format('Ymd-His') . '.xls';
+        $filename = $this->reportFilename('laporan-keuangan', 'xls');
 
         return response()
-            ->view('Admin.tickets.reports-excel', compact('transactions', 'totalRevenue'))
+            ->view('Admin.tickets.reports-excel', $this->financeReportPayload())
             ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    public function emailVisitorPdf()
+    {
+        $this->authorizeAdmin();
+
+        $filename = $this->reportFilename('laporan-daftar-pengunjung', 'pdf');
+
+        $this->sendReportEmail(
+            'Laporan Daftar Pengunjung Batu Kuda',
+            'Terlampir laporan daftar pengunjung Batu Kuda yang Anda minta dari admin dashboard.',
+            $filename,
+            $this->visitorPdfContent($this->visitorReportPayload()),
+            'application/pdf'
+        );
+
+        $this->recordAdminActivity('visitor_report_emailed', 'mengirim laporan daftar pengunjung ke email admin');
+
+        return $this->redirectToTickets('Laporan daftar pengunjung berhasil dikirim ke email admin yang login.');
+    }
+
+    public function emailFinanceExcel()
+    {
+        $this->authorizeAdmin();
+
+        $filename = $this->reportFilename('laporan-keuangan', 'xls');
+
+        $this->sendReportEmail(
+            'Laporan Keuangan Batu Kuda',
+            'Terlampir laporan keuangan Batu Kuda yang Anda minta dari admin dashboard.',
+            $filename,
+            view('Admin.tickets.reports-excel', $this->financeReportPayload())->render(),
+            'application/vnd.ms-excel'
+        );
+
+        $this->recordAdminActivity('finance_report_emailed', 'mengirim laporan keuangan ke email admin');
+
+        return $this->redirectToTickets('Laporan keuangan berhasil dikirim ke email admin yang login.');
+    }
+
+    private function visitorReportPayload(): array
+    {
+        return [
+            ...$this->reportExportContext(),
+            'transactions' => $this->reportTransactions(),
+        ];
+    }
+
+    private function financeReportPayload(): array
+    {
+        $transactions = $this->reportTransactions();
+
+        return [
+            ...$this->reportExportContext(),
+            'transactions' => $transactions,
+            'totalRevenue' => $transactions->sum('total_bayar'),
+        ];
+    }
+
+    private function reportExportContext(): array
+    {
+        $admin = Auth::user();
+        $exportedByUsername = $admin?->username ?: ($admin?->name ?: ($admin?->email ?: 'admin'));
+
+        return [
+            'printedAt' => now(),
+            'exportedBy' => $admin,
+            'exportedByUsername' => $exportedByUsername,
+            'watermarkText' => 'Diekspor oleh: ' . $exportedByUsername,
+        ];
+    }
+
+    private function visitorPdfContent(array $payload): string
+    {
+        return Pdf::loadView('Admin.tickets.reports-visitors-pdf', $payload)
+            ->setPaper('a4', 'landscape')
+            ->output();
+    }
+
+    private function reportFilename(string $prefix, string $extension): string
+    {
+        return $prefix . '-' . now()->format('Ymd-His') . '.' . $extension;
+    }
+
+    private function sendReportEmail(string $subject, string $body, string $filename, string $content, string $mime): void
+    {
+        $admin = Auth::user();
+
+        abort_if(blank($admin?->email), 422, 'Email admin yang sedang login belum tersedia.');
+
+        Mail::to($admin->email)->send(new AdminReportMail($subject, $body, $filename, $content, $mime));
     }
 
     private function validateTicket(Request $request): array
@@ -377,58 +451,6 @@ class AdminTicketController extends Controller
 
             return collect();
         }
-    }
-
-    private function makeSimplePdf(array $lines): string
-    {
-        $objects = [];
-        $pages = [];
-        $chunks = array_chunk($lines, 38);
-
-        foreach ($chunks as $pageIndex => $pageLines) {
-            $content = "BT\n/F1 10 Tf\n50 790 Td\n14 TL\n";
-
-            foreach ($pageLines as $line) {
-                $content .= '(' . $this->escapePdfText($line) . ") Tj\nT*\n";
-            }
-
-            $content .= "ET\n";
-            $contentObjectNumber = 4 + ($pageIndex * 2);
-            $pageObjectNumber = $contentObjectNumber + 1;
-
-            $objects[$contentObjectNumber] = "<< /Length " . strlen($content) . " >>\nstream\n" . $content . "endstream";
-            $objects[$pageObjectNumber] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents {$contentObjectNumber} 0 R >>";
-            $pages[] = "{$pageObjectNumber} 0 R";
-        }
-
-        $objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
-        $objects[2] = '<< /Type /Pages /Kids [' . implode(' ', $pages) . '] /Count ' . count($pages) . ' >>';
-        $objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
-        ksort($objects);
-
-        $pdf = "%PDF-1.4\n";
-        $offsets = [0];
-
-        foreach ($objects as $number => $body) {
-            $offsets[$number] = strlen($pdf);
-            $pdf .= "{$number} 0 obj\n{$body}\nendobj\n";
-        }
-
-        $xrefOffset = strlen($pdf);
-        $objectCount = max(array_keys($objects));
-        $pdf .= "xref\n0 " . ($objectCount + 1) . "\n";
-        $pdf .= "0000000000 65535 f \n";
-
-        for ($i = 1; $i <= $objectCount; $i++) {
-            $pdf .= str_pad((string) $offsets[$i], 10, '0', STR_PAD_LEFT) . " 00000 n \n";
-        }
-
-        return $pdf . "trailer\n<< /Size " . ($objectCount + 1) . " /Root 1 0 R >>\nstartxref\n{$xrefOffset}\n%%EOF";
-    }
-
-    private function escapePdfText(string $text): string
-    {
-        return str_replace(['\\', '(', ')'], ['\\\\', '\(', '\)'], $text);
     }
 
     private function redirectToTickets(string $message)
