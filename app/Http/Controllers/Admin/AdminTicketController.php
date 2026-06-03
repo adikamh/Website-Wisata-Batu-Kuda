@@ -2,10 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Admin\Concerns\RecordsAdminActivity;
 use App\Http\Controllers\Controller;
-use App\Mail\AdminReportMail;
-use App\Models\AdminActivity;
 use App\Models\TiketKategori;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
@@ -16,16 +13,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
-use Throwable;
 
 class AdminTicketController extends Controller
 {
-    use RecordsAdminActivity;
-
     public function dashboard()
     {
         $this->authorizeAdmin();
@@ -54,7 +46,42 @@ class AdminTicketController extends Controller
             })
             ->values();
 
-        $recentActivities = $this->recentAdminActivities();
+        $recentActivities = collect()
+            ->merge(
+                User::query()
+                    ->latest()
+                    ->limit(3)
+                    ->get()
+                    ->map(fn (User $user) => [
+                        'type' => 'user',
+                        'icon' => 'fa-user-plus',
+                        'icon_bg' => 'bg-green-100',
+                        'icon_text' => 'text-green-600',
+                        'title' => $user->name,
+                        'description' => 'Pengguna baru terdaftar',
+                        'time' => $user->created_at,
+                    ])
+            )
+            ->merge(
+                Transaction::query()
+                    ->with(['user', 'details', 'rentalItems'])
+                    ->latest()
+                    ->limit(3)
+                    ->get()
+                    ->map(fn (Transaction $transaction) => [
+                        'type' => 'transaction',
+                        'icon' => 'fa-ticket-alt',
+                        'icon_bg' => 'bg-indigo-100',
+                        'icon_text' => 'text-indigo-600',
+                        'title' => $transaction->user->name ?? 'Pengguna',
+                        'description' => 'Pembelian tiket ' . ($transaction->details->sum('quantity') ?: 0) . ' item'
+                            . ($transaction->rentalItems->isNotEmpty() ? ' + sewa fasilitas' : ''),
+                        'time' => $transaction->created_at,
+                    ])
+            )
+            ->sortByDesc('time')
+            ->take(5)
+            ->values();
 
         $stats = [
             'total_users' => User::count(),
@@ -133,14 +160,12 @@ class AdminTicketController extends Controller
 
         $validated = $this->validateTicket($request);
 
-        $ticket = TiketKategori::create([
+        TiketKategori::create([
             'wisata_id' => $this->batuKuda()->id,
             'nama_kategori' => $validated['nama_kategori'],
             'deskripsi' => $validated['deskripsi'] ?? null,
             'harga' => $validated['harga'],
         ]);
-
-        $this->recordAdminActivity('ticket_created', 'menambahkan tiket "' . $ticket->nama_kategori . '"', $ticket);
 
         return $this->redirectToTickets('Tiket berhasil ditambahkan.');
     }
@@ -151,12 +176,10 @@ class AdminTicketController extends Controller
 
         $validated = $this->validateUser($request);
 
-        $createdUser = User::create([
+        User::create([
             ...$validated,
             'password' => Hash::make($validated['password']),
         ]);
-
-        $this->recordAdminActivity('user_created', 'menambahkan akun "' . $createdUser->name . '"', $createdUser);
 
         return redirect()
             ->route('admin.users')
@@ -177,8 +200,6 @@ class AdminTicketController extends Controller
 
         $user->update($validated);
 
-        $this->recordAdminActivity('user_updated', 'memperbarui akun "' . $user->name . '"', $user);
-
         return redirect()
             ->route('admin.users')
             ->with('status', 'Pengguna berhasil diperbarui.');
@@ -190,11 +211,7 @@ class AdminTicketController extends Controller
 
         abort_if(Auth::id() === $user->id, 422, 'Akun admin yang sedang login tidak bisa dihapus.');
 
-        $deletedUserName = $user->name;
-
         $user->delete();
-
-        $this->recordAdminActivity('user_deleted', 'menghapus akun "' . $deletedUserName . '"', $user);
 
         return redirect()
             ->route('admin.users')
@@ -207,8 +224,6 @@ class AdminTicketController extends Controller
 
         $ticket->update($this->validateTicket($request));
 
-        $this->recordAdminActivity('ticket_updated', 'memperbarui tiket "' . $ticket->nama_kategori . '"', $ticket);
-
         return $this->redirectToTickets('Tiket berhasil diperbarui.');
     }
 
@@ -216,11 +231,7 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
-        $deletedTicketName = $ticket->nama_kategori;
-
         $ticket->delete();
-
-        $this->recordAdminActivity('ticket_deleted', 'menghapus tiket "' . $deletedTicketName . '"', $ticket);
 
         return $this->redirectToTickets('Tiket berhasil dihapus.');
     }
@@ -255,9 +266,11 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
-        $this->recordAdminActivity('visitor_report_downloaded', 'mengunduh laporan daftar pengunjung');
-
-        $filename = $this->reportFilename('laporan-daftar-pengunjung', 'pdf');
+        $lines = [
+            'LAPORAN DAFTAR PENGUNJUNG BATU KUDA',
+            'Dicetak: ' . now()->format('d/m/Y H:i'),
+            '',
+        ];
 
         return response($this->visitorPdfContent($this->visitorReportPayload()), 200, [
             'Content-Type' => 'application/pdf',
@@ -269,9 +282,9 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
-        $this->recordAdminActivity('finance_report_downloaded', 'mengunduh laporan keuangan');
-
-        $filename = $this->reportFilename('laporan-keuangan', 'xls');
+        $transactions = $this->reportTransactions();
+        $totalRevenue = $transactions->sum('total_bayar');
+        $filename = 'laporan-keuangan-' . now()->format('Ymd-His') . '.xls';
 
         return response()
             ->view('Admin.tickets.reports-excel', $this->financeReportPayload())
@@ -427,30 +440,56 @@ class AdminTicketController extends Controller
             ->get();
     }
 
-    private function recentAdminActivities()
+    private function makeSimplePdf(array $lines): string
     {
-        try {
-            if (! Schema::hasTable('admin_activities')) {
-                return collect();
+        $objects = [];
+        $pages = [];
+        $chunks = array_chunk($lines, 38);
+
+        foreach ($chunks as $pageIndex => $pageLines) {
+            $content = "BT\n/F1 10 Tf\n50 790 Td\n14 TL\n";
+
+            foreach ($pageLines as $line) {
+                $content .= '(' . $this->escapePdfText($line) . ") Tj\nT*\n";
             }
 
-            return AdminActivity::query()
-                ->latest()
-                ->limit(5)
-                ->get()
-                ->map(fn (AdminActivity $activity) => [
-                    'icon' => $activity->icon ?: 'fa-clipboard-list',
-                    'icon_bg' => $activity->icon_bg ?: 'bg-gray-100',
-                    'icon_text' => $activity->icon_text ?: 'text-gray-600',
-                    'title' => $activity->title ?: $activity->admin_name,
-                    'description' => $activity->description,
-                    'time' => $activity->created_at,
-                ]);
-        } catch (Throwable $exception) {
-            report($exception);
+            $content .= "ET\n";
+            $contentObjectNumber = 4 + ($pageIndex * 2);
+            $pageObjectNumber = $contentObjectNumber + 1;
 
-            return collect();
+            $objects[$contentObjectNumber] = "<< /Length " . strlen($content) . " >>\nstream\n" . $content . "endstream";
+            $objects[$pageObjectNumber] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents {$contentObjectNumber} 0 R >>";
+            $pages[] = "{$pageObjectNumber} 0 R";
         }
+
+        $objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+        $objects[2] = '<< /Type /Pages /Kids [' . implode(' ', $pages) . '] /Count ' . count($pages) . ' >>';
+        $objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+        ksort($objects);
+
+        $pdf = "%PDF-1.4\n";
+        $offsets = [0];
+
+        foreach ($objects as $number => $body) {
+            $offsets[$number] = strlen($pdf);
+            $pdf .= "{$number} 0 obj\n{$body}\nendobj\n";
+        }
+
+        $xrefOffset = strlen($pdf);
+        $objectCount = max(array_keys($objects));
+        $pdf .= "xref\n0 " . ($objectCount + 1) . "\n";
+        $pdf .= "0000000000 65535 f \n";
+
+        for ($i = 1; $i <= $objectCount; $i++) {
+            $pdf .= str_pad((string) $offsets[$i], 10, '0', STR_PAD_LEFT) . " 00000 n \n";
+        }
+
+        return $pdf . "trailer\n<< /Size " . ($objectCount + 1) . " /Root 1 0 R >>\nstartxref\n{$xrefOffset}\n%%EOF";
+    }
+
+    private function escapePdfText(string $text): string
+    {
+        return str_replace(['\\', '(', ')'], ['\\\\', '\(', '\)'], $text);
     }
 
     private function redirectToTickets(string $message)
