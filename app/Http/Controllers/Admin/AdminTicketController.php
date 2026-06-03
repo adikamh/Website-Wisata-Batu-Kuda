@@ -3,11 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-<<<<<<< HEAD
-=======
-use App\Mail\AdminReportMail;
-use App\Models\AdminActivity;
->>>>>>> 0f37d79327f37c38d56b9f4fcf39b1fd80c4e806
 use App\Models\TiketKategori;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
@@ -18,11 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-<<<<<<< HEAD
-=======
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Schema;
->>>>>>> 0f37d79327f37c38d56b9f4fcf39b1fd80c4e806
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -276,17 +266,11 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
-<<<<<<< HEAD
         $lines = [
             'LAPORAN DAFTAR PENGUNJUNG BATU KUDA',
             'Dicetak: ' . now()->format('d/m/Y H:i'),
             '',
         ];
-=======
-        $this->recordAdminActivity('visitor_report_downloaded', 'mengunduh laporan daftar pengunjung');
-
-        $filename = $this->reportFilename('laporan-daftar-pengunjung', 'pdf');
->>>>>>> 0f37d79327f37c38d56b9f4fcf39b1fd80c4e806
 
         return response($this->visitorPdfContent($this->visitorReportPayload()), 200, [
             'Content-Type' => 'application/pdf',
@@ -298,15 +282,9 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
-<<<<<<< HEAD
         $transactions = $this->reportTransactions();
         $totalRevenue = $transactions->sum('total_bayar');
         $filename = 'laporan-keuangan-' . now()->format('Ymd-His') . '.xls';
-=======
-        $this->recordAdminActivity('finance_report_downloaded', 'mengunduh laporan keuangan');
-
-        $filename = $this->reportFilename('laporan-keuangan', 'xls');
->>>>>>> 0f37d79327f37c38d56b9f4fcf39b1fd80c4e806
 
         return response()
             ->view('Admin.tickets.reports-excel', $this->financeReportPayload())
@@ -462,7 +440,6 @@ class AdminTicketController extends Controller
             ->get();
     }
 
-<<<<<<< HEAD
     private function makeSimplePdf(array $lines): string
     {
         $objects = [];
@@ -513,32 +490,6 @@ class AdminTicketController extends Controller
     private function escapePdfText(string $text): string
     {
         return str_replace(['\\', '(', ')'], ['\\\\', '\(', '\)'], $text);
-=======
-    private function recentAdminActivities()
-    {
-        try {
-            if (! Schema::hasTable('admin_activities')) {
-                return collect();
-            }
-
-            return AdminActivity::query()
-                ->latest()
-                ->limit(5)
-                ->get()
-                ->map(fn (AdminActivity $activity) => [
-                    'icon' => $activity->icon ?: 'fa-clipboard-list',
-                    'icon_bg' => $activity->icon_bg ?: 'bg-gray-100',
-                    'icon_text' => $activity->icon_text ?: 'text-gray-600',
-                    'title' => $activity->title ?: $activity->admin_name,
-                    'description' => $activity->description,
-                    'time' => $activity->created_at,
-                ]);
-        } catch (Throwable $exception) {
-            report($exception);
-
-            return collect();
-        }
->>>>>>> 0f37d79327f37c38d56b9f4fcf39b1fd80c4e806
     }
 
     private function redirectToTickets(string $message)

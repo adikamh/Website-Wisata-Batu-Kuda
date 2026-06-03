@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleButton?.setAttribute('aria-expanded', String(!collapsed));
 
         if (toggleIcon) {
-            toggleIcon.textContent = collapsed ? '>' : '<';
+            toggleIcon.textContent = '>';
         }
 
         try {
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleButton?.setAttribute('aria-expanded', String(open));
 
         if (toggleIcon) {
-            toggleIcon.textContent = open ? '◀' : '▶';
+            toggleIcon.textContent = '>';
         }
 
         setOverlay(open);
