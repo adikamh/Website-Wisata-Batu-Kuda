@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="@yield('meta_description', 'Batu Kuda - Destinasi Wisata Alam di Kabupaten Bandung, Jawa Barat')">
     <title>@yield('title', 'Wisata Alam Kabupaten Bandung')</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo/favicon.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>

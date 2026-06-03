@@ -10,6 +10,7 @@
 @section('content')
 
 @php($authVisualImage = asset('images/tiket.jpeg'))
+@php($authLogoImage = asset('images/logo/favicon.png'))
 
 <div class="auth-layout otp-layout">
     <div class="auth-visual">
@@ -20,9 +21,9 @@
 
         <div class="visual-content">
             <a href="{{ route('home') }}" class="visual-logo">
-                <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 30L13 13L20 23L25 15L32 30H4Z" fill="#74c69d" opacity="0.95"/>
-                    <path d="M20 7C20 7 27 10 25 20C23 16 19 15 18 11C17 15 14 17 12 20C10 11 18 5 20 7Z" fill="#b7e4c7"/>
+                <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:28px;">
+                    <path d="M4 26L12 12L18 20L22 14L28 26H4Z" fill="#74c69d" opacity="0.9"/>
+                    <path d="M18 8C18 8 24 10 22 18C20 15 17 14 16 11C15 14 13 16 11 18C9 10 16 6 18 8Z" fill="#b7e4c7"/>
                 </svg>
                 Batu Kuda
             </a>
@@ -55,10 +56,7 @@
         <div class="otp-card">
             <div class="auth-header">
                 <div class="auth-icon otp-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 12l2 2 4-4"></path>
-                        <path d="M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"></path>
-                    </svg>
+                    <img src="{{ $authLogoImage }}" alt="Logo Batu Kuda">
                 </div>
                 <h1>Verifikasi OTP Reset</h1>
                 <p>Masukkan kode OTP 6 digit yang kami kirimkan ke email Anda untuk melanjutkan reset password</p>

@@ -1,6 +1,6 @@
 @extends('layout.main')
 
-@section('title', 'Batu Kuda | Wisata Alam Kabupaten Bandung')
+@section('title', 'Wisata Batu Kuda')
 
 @push('styles')
     <link

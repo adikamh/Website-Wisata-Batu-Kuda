@@ -164,6 +164,14 @@ img {
     height: 36px;
 }
 
+.visual-logo img {
+    display: block;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
 .visual-quote {
     margin-top: auto;
     animation: fadeUp 0.9s 0.4s ease both;
@@ -318,6 +326,14 @@ img {
 .auth-icon svg {
     width: 27px;
     height: 27px;
+}
+
+.auth-icon img {
+    display: block;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .register-icon {

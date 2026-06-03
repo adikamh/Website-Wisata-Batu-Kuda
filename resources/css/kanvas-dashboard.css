@@ -90,6 +90,16 @@
     flex-wrap: wrap;
 }
 
+.canvas-modal-actions .btn-outline {
+    color: #111827;
+    border-color: #d1d5db;
+}
+
+.canvas-modal-actions .btn-outline:hover {
+    color: #111827;
+    border-color: #111827;
+}
+
 .canvas-editor-item {
     border: 1px solid #e5e7eb;
     border-radius: 0.9rem;

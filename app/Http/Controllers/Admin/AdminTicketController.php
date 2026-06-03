@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\TiketKategori;
 use App\Models\Transaction;
+use App\Models\TransactionDetail;
 use App\Models\User;
 use App\Models\Wisata;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -19,24 +21,27 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
-        $chartTransactions = Transaction::query()
-            ->select(['created_at', 'total_bayar'])
-            ->where('status_pembayaran', 'success')
-            ->whereDate('created_at', '>=', now()->subDays(6)->startOfDay())
-            ->orderBy('created_at')
-            ->get();
+        $successfulTransactions = fn () => Transaction::query()
+            ->where('status_pembayaran', 'success');
+
+        $successfulTransactionDetails = fn () => TransactionDetail::query()
+            ->whereHas('transaction', fn ($query) => $query->where('status_pembayaran', 'success'));
+
+        $dailyRevenue = $successfulTransactions()
+            ->selectRaw('DATE(created_at) as transaction_date, SUM(total_bayar) as total_revenue')
+            ->whereBetween('created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->pluck('total_revenue', 'transaction_date');
 
         $chartLabels = collect(range(6, 0))
             ->map(fn (int $daysAgo) => now()->subDays($daysAgo)->locale('id')->translatedFormat('D'))
             ->values();
 
         $chartData = collect(range(6, 0))
-            ->map(function (int $daysAgo) use ($chartTransactions) {
+            ->map(function (int $daysAgo) use ($dailyRevenue) {
                 $date = now()->subDays($daysAgo)->toDateString();
 
-                return (float) $chartTransactions
-                    ->filter(fn (Transaction $transaction) => $transaction->created_at->toDateString() === $date)
-                    ->sum('total_bayar');
+                return (float) ($dailyRevenue[$date] ?? 0);
             })
             ->values();
 
@@ -79,17 +84,13 @@ class AdminTicketController extends Controller
 
         $stats = [
             'total_users' => User::count(),
-            'today_revenue' => (float) Transaction::query()
-                ->where('status_pembayaran', 'success')
+            'today_revenue' => (float) $successfulTransactions()
                 ->whereDate('created_at', today())
                 ->sum('total_bayar'),
-            'tickets_sold' => (int) Transaction::query()
-                ->with('details')
-                ->where('status_pembayaran', 'success')
-                ->get()
-                ->sum(fn (Transaction $transaction) => $transaction->details->sum('quantity')),
-            'camping_orders' => Transaction::query()
-                ->whereHas('details', fn ($query) => $query->where('package_type', 'camping'))
+            'tickets_sold' => (int) $successfulTransactionDetails()
+                ->sum('quantity'),
+            'camping_orders' => (int) $successfulTransactionDetails()
+                ->where('package_type', 'camping')
                 ->count(),
         ];
 
@@ -108,7 +109,7 @@ class AdminTicketController extends Controller
         return view('Admin.users.index', compact('users'));
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorizeAdmin();
 
@@ -116,13 +117,35 @@ class AdminTicketController extends Controller
             ->latest()
             ->get();
 
+        $transactionFilters = [
+            'search' => trim((string) $request->query('search', '')),
+            'approval_status' => $request->query('approval_status', 'all'),
+        ];
+
+        if (! in_array($transactionFilters['approval_status'], ['all', 'pending', 'success'], true)) {
+            $transactionFilters['approval_status'] = 'all';
+        }
+
         $transactions = Transaction::query()
             ->with(['user', 'details.tiketKategori', 'rentalItems'])
+            ->when($transactionFilters['search'] !== '', function ($query) use ($transactionFilters) {
+                $search = $transactionFilters['search'];
+                $receiptId = preg_replace('/\D/', '', $search);
+
+                $query->where(function ($query) use ($search, $receiptId) {
+                    $query->whereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%' . $search . '%'));
+
+                    if ($receiptId !== '') {
+                        $query->orWhere('transactions.id', (int) $receiptId);
+                    }
+                });
+            })
+            ->when($transactionFilters['approval_status'] !== 'all', fn ($query) => $query->where('status_pembayaran', $transactionFilters['approval_status']))
             ->latest()
-            ->limit(20)
+            ->limit(10)
             ->get();
 
-        return view('Admin.tickets.index', compact('tickets', 'transactions'));
+        return view('Admin.tickets.index', compact('tickets', 'transactions', 'transactionFilters'));
     }
 
     public function store(Request $request)
@@ -205,6 +228,32 @@ class AdminTicketController extends Controller
         $ticket->delete();
 
         return $this->redirectToTickets('Tiket berhasil dihapus.');
+    }
+
+    public function approveTransaction(Transaction $transaction)
+    {
+        $this->authorizeAdmin();
+
+        if ($transaction->status_pembayaran !== 'pending') {
+            return $this->redirectToTickets('Hanya transaksi dengan status pending yang dapat di-approve.');
+        }
+
+        $transaction->update([
+            'status_pembayaran' => 'success',
+        ]);
+
+        $this->recordAdminActivity(
+            'ticket_approved',
+            'meng-approve transaksi INV-' . str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT),
+            $transaction,
+            [
+                'icon' => 'fa-check-circle',
+                'icon_bg' => 'bg-green-100',
+                'icon_text' => 'text-green-600',
+            ]
+        );
+
+        return $this->redirectToTickets('Transaksi berhasil di-approve dan akan muncul di dashboard.');
     }
 
     public function downloadVisitorPdf()

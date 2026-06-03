@@ -56,7 +56,36 @@
 
                 <div class="overflow-hidden rounded-xl border">
                     <div class="border-b bg-gray-50 px-5 py-4">
-                        <h3 class="text-base font-bold text-gray-700">Tiket yang Sudah Dibeli</h3>
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-700">Tiket yang Sudah Dibeli</h3>
+                                <p class="mt-1 text-xs text-gray-500">Menampilkan maksimal 10 transaksi terbaru.</p>
+                            </div>
+
+                            <form id="transactionFilterForm" action="{{ route('admin.tickets') }}" method="GET" class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                                <label class="relative sm:w-72">
+                                    <span class="sr-only">Cari resi atau nama</span>
+                                    <i class="fas fa-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400"></i>
+                                    <input
+                                        type="search"
+                                        name="search"
+                                        id="transactionSearchInput"
+                                        value="{{ $transactionFilters['search'] ?? '' }}"
+                                        placeholder="Cari resi atau nama"
+                                        class="w-full rounded-lg border-gray-300 py-2 pl-9 pr-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                </label>
+
+                                <label class="sm:w-48">
+                                    <span class="sr-only">Status approval</span>
+                                    <select name="approval_status" id="transactionApprovalStatus" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        <option value="all" @selected(($transactionFilters['approval_status'] ?? 'all') === 'all')>Semua Status</option>
+                                        <option value="pending" @selected(($transactionFilters['approval_status'] ?? 'all') === 'pending')>Belum di-approve</option>
+                                        <option value="success" @selected(($transactionFilters['approval_status'] ?? 'all') === 'success')>Sudah di-approve</option>
+                                    </select>
+                                </label>
+                            </form>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -65,26 +94,59 @@
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tanggal</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Resi</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Username</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Detail</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Total</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 bg-white">
                                 @forelse ($transactions as $transaction)
                                     @php($detail = $transaction->details->first())
                                     @php($rentalText = $transaction->rentalItems->isNotEmpty() ? $transaction->rentalItems->map(fn ($item) => $item->facility_name . ' x' . $item->quantity)->implode(', ') : '-')
+                                    @php($statusStyles = [
+                                        'pending' => 'bg-yellow-100 text-yellow-700',
+                                        'success' => 'bg-green-100 text-green-700',
+                                        'failed' => 'bg-red-100 text-red-700',
+                                        'expired' => 'bg-gray-100 text-gray-600',
+                                    ])
+                                    @php($statusLabels = [
+                                        'pending' => 'Menunggu Approval',
+                                        'success' => 'Disetujui',
+                                        'failed' => 'Gagal',
+                                        'expired' => 'Kedaluwarsa',
+                                    ])
                                     <tr class="align-top transition hover:bg-gray-50">
                                         <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{{ $transaction->created_at->format('d/m/Y') }}</td>
                                         <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-900">INV-{{ str_pad($transaction->id, 6, '0', STR_PAD_LEFT) }}</td>
                                         <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{{ $transaction->user->name ?? '-' }}</td>
                                         <td class="px-4 py-4 text-sm text-gray-700">
-                                            <button type="button" data-ticket-detail-open data-jumlah="{{ $detail->quantity ?? 0 }}" data-masuk="{{ optional($detail?->start_date)->format('d/m/Y') ?? ($detail->start_date ?? '-') }}" data-keluar="{{ optional($detail?->end_date)->format('d/m/Y') ?? ($detail->end_date ?? '-') }}" data-nama="{{ $transaction->user->name ?? '-' }}" data-paket="{{ $detail?->tiketKategori?->nama_kategori ?? '-' }}" data-fasilitas="{{ $rentalText }}" class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700">
-                                                <i class="fas fa-eye mr-1"></i> Detail
-                                            </button>
+                                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $statusStyles[$transaction->status_pembayaran] ?? 'bg-gray-100 text-gray-600' }}">
+                                                {{ $statusLabels[$transaction->status_pembayaran] ?? ucfirst($transaction->status_pembayaran) }}
+                                            </span>
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-900">
+                                            Rp{{ number_format($transaction->total_bayar, 0, ',', '.') }}
+                                        </td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <div class="flex flex-wrap gap-2">
+                                                <button type="button" data-ticket-detail-open data-jumlah="{{ $detail->quantity ?? 0 }}" data-masuk="{{ optional($detail?->start_date)->format('d/m/Y') ?? ($detail->start_date ?? '-') }}" data-keluar="{{ optional($detail?->end_date)->format('d/m/Y') ?? ($detail->end_date ?? '-') }}" data-nama="{{ $transaction->user->name ?? '-' }}" data-paket="{{ $detail?->tiketKategori?->nama_kategori ?? '-' }}" data-fasilitas="{{ $rentalText }}" class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700">
+                                                    <i class="fas fa-eye mr-1"></i> Detail
+                                                </button>
+
+                                                @if ($transaction->status_pembayaran === 'pending')
+                                                    <form action="{{ route('admin.transactions.approve', $transaction) }}" method="POST" onsubmit="return confirm('Approve transaksi ini? Data akan masuk ke dashboard.');">
+                                                        @csrf
+                                                        <button type="submit" class="inline-flex items-center rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-green-700">
+                                                            <i class="fas fa-check mr-1"></i> Approve
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="px-4 py-6 text-center text-sm text-gray-500">Belum ada tiket yang dipesan user.</td>
+                                        <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">Belum ada tiket yang dipesan user.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -263,6 +325,29 @@
                 if (event.target === ticketDetailModal) {
                     closeTicketDetailModal();
                 }
+            });
+
+            const transactionFilterForm = document.getElementById('transactionFilterForm');
+            const transactionSearchInput = document.getElementById('transactionSearchInput');
+            const transactionApprovalStatus = document.getElementById('transactionApprovalStatus');
+            let transactionSearchTimer;
+
+            function submitTransactionFilters() {
+                if (!transactionFilterForm) {
+                    return;
+                }
+
+                transactionFilterForm.submit();
+            }
+
+            transactionSearchInput?.addEventListener('input', function () {
+                clearTimeout(transactionSearchTimer);
+                transactionSearchTimer = setTimeout(submitTransactionFilters, 450);
+            });
+
+            transactionApprovalStatus?.addEventListener('change', function () {
+                clearTimeout(transactionSearchTimer);
+                submitTransactionFilters();
             });
         });
     </script>

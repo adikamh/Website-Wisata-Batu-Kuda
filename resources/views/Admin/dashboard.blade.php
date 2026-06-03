@@ -9,7 +9,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-500">Total Pengguna</p>
-                    <p class="mt-1 text-3xl font-extrabold text-gray-800">{{ number_format($stats['total_users']) }}</p>
+                    <p class="mt-1 text-3xl font-extrabold text-gray-800">{{ number_format($stats['total_users'] ?? 0) }}</p>
                     <span class="mt-1 inline-flex items-center text-sm text-green-600">
                         <i class="fas fa-arrow-up mr-1"></i> Data akun terdaftar
                     </span>
@@ -24,7 +24,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-500">Pendapatan Hari Ini</p>
-                    <p class="mt-1 text-3xl font-extrabold text-gray-800">Rp{{ number_format($stats['today_revenue'], 0, ',', '.') }}</p>
+                    <p class="mt-1 text-3xl font-extrabold text-gray-800">Rp{{ number_format($stats['today_revenue'] ?? 0, 0, ',', '.') }}</p>
                     <span class="mt-1 inline-flex items-center text-sm text-green-600">
                         <i class="fas fa-wallet mr-1"></i> Transaksi sukses hari ini
                     </span>
@@ -39,7 +39,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-500">Tiket Terjual</p>
-                    <p class="mt-1 text-3xl font-extrabold text-gray-800">{{ number_format($stats['tickets_sold']) }}</p>
+                    <p class="mt-1 text-3xl font-extrabold text-gray-800">{{ number_format($stats['tickets_sold'] ?? 0) }}</p>
                     <span class="mt-1 inline-flex items-center text-sm text-green-600">
                         <i class="fas fa-arrow-up mr-1"></i> Akumulasi tiket sukses
                     </span>
@@ -54,8 +54,8 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-500">Total Kemping</p>
-                    <p class="mt-1 text-3xl font-extrabold text-gray-800">{{ number_format($stats['camping_orders']) }}</p>
-                    <span class="mt-1 text-xs text-gray-400">Pesanan paket camping</span>
+                    <p class="mt-1 text-3xl font-extrabold text-gray-800">{{ number_format($stats['camping_orders'] ?? 0) }}</p>
+                    <span class="mt-1 text-xs text-gray-400">Pesanan camping sukses</span>
                 </div>
                 <div class="rounded-full bg-red-100 p-3">
                     <i class="fas fa-campground text-xl text-red-600"></i>
