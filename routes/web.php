@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\InfoWisataController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\XenditController;
 
 Route::get('/', [WisataController::class, 'dashboard'])->name('home');
 
@@ -80,14 +81,33 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/tickets', [AdminTicketController::class, 'store'])->name('admin.tickets.store');
     Route::put('/tickets/{ticket}', [AdminTicketController::class, 'update'])->name('admin.tickets.update');
     Route::delete('/tickets/{ticket}', [AdminTicketController::class, 'destroy'])->name('admin.tickets.destroy');
+    Route::post('/transactions/{transaction}/approve', [AdminTicketController::class, 'approveTransaction'])->name('admin.transactions.approve');
+    Route::post('/transactions/{transaction}/camping/approve-exit', [\App\Http\Controllers\Admin\AdminCampingController::class, 'approveExit'])->name('admin.transactions.camping.approve');
+    Route::post('/transactions/{transaction}/camping/mark', [\App\Http\Controllers\Admin\AdminCampingController::class, 'markAsCamping'])->name('admin.transactions.camping.mark');
+    Route::post('/transactions/{transaction}/camping/checkin', [\App\Http\Controllers\Admin\AdminCampingController::class, 'markCheckIn'])->name('admin.transactions.camping.checkin');
     Route::get('/fasilitas-sewa', [AdminRentalFacilityController::class, 'index'])->name('admin.facilities');
     Route::post('/fasilitas-sewa', [AdminRentalFacilityController::class, 'store'])->name('admin.facilities.store');
     Route::put('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'update'])->name('admin.facilities.update');
     Route::delete('/fasilitas-sewa/{facility}', [AdminRentalFacilityController::class, 'destroy'])->name('admin.facilities.destroy');
     Route::get('/reports/visitors.pdf', [AdminTicketController::class, 'downloadVisitorPdf'])->name('admin.reports.visitors.pdf');
+    Route::post('/reports/visitors.pdf/email', [AdminTicketController::class, 'emailVisitorPdf'])->name('admin.reports.visitors.email');
     Route::get('/reports/finance.xls', [AdminTicketController::class, 'downloadFinanceExcel'])->name('admin.reports.finance.excel');
+    Route::post('/reports/finance.xls/email', [AdminTicketController::class, 'emailFinanceExcel'])->name('admin.reports.finance.email');
         Route::post('/dashboard-content', [DashboardContentController::class, 'updateContent'])->name('admin.dashboard-content.update');
         Route::get('/dashboard-content', [DashboardContentController::class, 'getContent'])->name('admin.dashboard-content.get');
 });
 
 Route::post('/chat', ChatbotController::class);
+
+// Xendit Payment Routes
+Route::middleware('auth')->group(function () {
+    Route::post('/xendit/create-payment', [XenditController::class, 'createPayment'])->name('xendit.create-payment');
+    Route::get('/xendit/check-status', [XenditController::class, 'checkPaymentStatus'])->name('xendit.check-status');
+});
+
+// Xendit Webhook (no auth required)
+Route::post('/xendit/webhook', [XenditController::class, 'handleWebhook'])->name('xendit.webhook');
+
+// Xendit Redirect Routes (opsional)
+Route::get('/xendit/success', [XenditController::class, 'success'])->name('xendit.success');
+Route::get('/xendit/failed', [XenditController::class, 'failed'])->name('xendit.failed');

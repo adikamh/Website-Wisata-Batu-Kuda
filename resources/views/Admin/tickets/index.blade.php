@@ -56,7 +56,47 @@
 
                 <div class="overflow-hidden rounded-xl border">
                     <div class="border-b bg-gray-50 px-5 py-4">
-                        <h3 class="text-base font-bold text-gray-700">Tiket yang Sudah Dibeli</h3>
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-700">Tiket yang Sudah Dibeli</h3>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Menampilkan {{ $transactions->firstItem() ?? 0 }}-{{ $transactions->lastItem() ?? 0 }} dari {{ $transactions->total() }} transaksi.
+                                </p>
+                            </div>
+
+                            <form id="transactionFilterForm" action="{{ route('admin.tickets') }}" method="GET" class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                                <label class="relative sm:w-72">
+                                    <span class="sr-only">Cari resi atau nama</span>
+                                    <i class="fas fa-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400"></i>
+                                    <input
+                                        type="search"
+                                        name="search"
+                                        id="transactionSearchInput"
+                                        value="{{ $transactionFilters['search'] ?? '' }}"
+                                        placeholder="Cari resi atau nama"
+                                        class="w-full rounded-lg border-gray-300 py-2 pl-9 pr-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                </label>
+
+                                <label class="sm:w-48">
+                                    <span class="sr-only">Status approval</span>
+                                    <select name="approval_status" id="transactionApprovalStatus" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        <option value="all" @selected(($transactionFilters['approval_status'] ?? 'all') === 'all')>Semua Status</option>
+                                        <option value="pending" @selected(($transactionFilters['approval_status'] ?? 'all') === 'pending')>Belum di-approve</option>
+                                        <option value="success" @selected(($transactionFilters['approval_status'] ?? 'all') === 'success')>Sudah di-approve</option>
+                                    </select>
+                                </label>
+
+                                <label class="sm:w-36">
+                                    <span class="sr-only">Jumlah data per halaman</span>
+                                    <select name="per_page" id="transactionPerPage" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        <option value="10" @selected(($transactionFilters['per_page'] ?? 10) === 10)>10 data</option>
+                                        <option value="25" @selected(($transactionFilters['per_page'] ?? 10) === 25)>25 data</option>
+                                        <option value="50" @selected(($transactionFilters['per_page'] ?? 10) === 50)>50 data</option>
+                                    </select>
+                                </label>
+                            </form>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -65,26 +105,222 @@
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tanggal</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Resi</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Username</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Detail</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Total</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Camping</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 bg-white">
                                 @forelse ($transactions as $transaction)
                                     @php($detail = $transaction->details->first())
                                     @php($rentalText = $transaction->rentalItems->isNotEmpty() ? $transaction->rentalItems->map(fn ($item) => $item->facility_name . ' x' . $item->quantity)->implode(', ') : '-')
+                                    @php($statusStyles = [
+                                        'pending' => 'bg-yellow-100 text-yellow-700',
+                                        'success' => 'bg-green-100 text-green-700',
+                                        'failed' => 'bg-red-100 text-red-700',
+                                        'expired' => 'bg-gray-100 text-gray-600',
+                                    ])
+                                    @php($statusLabels = [
+                                        'pending' => 'Menunggu Approval',
+                                        'success' => 'Disetujui',
+                                        'failed' => 'Gagal',
+                                        'expired' => 'Kedaluwarsa',
+                                    ])
                                     <tr class="align-top transition hover:bg-gray-50">
                                         <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{{ $transaction->created_at->format('d/m/Y') }}</td>
                                         <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-900">INV-{{ str_pad($transaction->id, 6, '0', STR_PAD_LEFT) }}</td>
                                         <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{{ $transaction->user->name ?? '-' }}</td>
                                         <td class="px-4 py-4 text-sm text-gray-700">
-                                            <button type="button" data-ticket-detail-open data-jumlah="{{ $detail->quantity ?? 0 }}" data-masuk="{{ optional($detail?->start_date)->format('d/m/Y') ?? ($detail->start_date ?? '-') }}" data-keluar="{{ optional($detail?->end_date)->format('d/m/Y') ?? ($detail->end_date ?? '-') }}" data-nama="{{ $transaction->user->name ?? '-' }}" data-paket="{{ $detail?->tiketKategori?->nama_kategori ?? '-' }}" data-fasilitas="{{ $rentalText }}" class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700">
-                                                <i class="fas fa-eye mr-1"></i> Detail
-                                            </button>
+                                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $statusStyles[$transaction->status_pembayaran] ?? 'bg-gray-100 text-gray-600' }}">
+                                                {{ $statusLabels[$transaction->status_pembayaran] ?? ucfirst($transaction->status_pembayaran) }}
+                                            </span>
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-900">
+                                            Rp{{ number_format($transaction->total_bayar, 0, ',', '.') }}
+                                        </td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            @if ($detail && ($detail->package_type ?? '') === 'camping')
+                                                @if ($transaction->camping_checked_out_at)
+                                                    <span class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Keluar: {{ optional($transaction->camping_checked_out_at)->format('d/m/Y') }}</span>
+                                                    @if ($transaction->camping_penalty > 0)
+                                                        <div class="mt-1 text-xs text-red-600">Denda: Rp{{ number_format($transaction->camping_penalty, 0, ',', '.') }}</div>
+                                                    @endif
+                                                @else
+                                                    <form action="{{ route('admin.transactions.camping.approve', $transaction) }}" method="POST" class="flex items-center gap-2">
+                                                        @csrf
+                                                        <input type="number" name="actual_count" value="{{ $detail->quantity ?? 0 }}" min="0" class="w-20 rounded-lg border-gray-300 px-2 py-1 text-sm">
+                                                        <label class="flex items-center gap-2 text-sm">
+                                                            <input type="hidden" name="trash_brought" value="0">
+                                                            <input type="checkbox" name="trash_brought" value="1" class="h-4 w-4"> Sampah dibawa
+                                                        </label>
+                                                        <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700">Catat Keluar</button>
+                                                    </form>
+                                                @endif
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <div class="flex flex-wrap gap-2">
+                                                <button type="button" data-ticket-detail-open data-jumlah="{{ $detail->quantity ?? 0 }}" data-masuk="{{ optional($detail?->start_date)->format('d/m/Y') ?? ($detail->start_date ?? '-') }}" data-keluar="{{ optional($detail?->end_date)->format('d/m/Y') ?? ($detail->end_date ?? '-') }}" data-nama="{{ $transaction->user->name ?? '-' }}" data-paket="{{ $detail?->tiketKategori?->nama_kategori ?? '-' }}" data-fasilitas="{{ $rentalText }}" class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700">
+                                                    <i class="fas fa-eye mr-1"></i> Detail
+                                                </button>
+
+                                                @if ($transaction->status_pembayaran === 'pending')
+                                                    <form action="{{ route('admin.transactions.approve', $transaction) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit" data-swal-confirm data-swal-title="Approve transaksi ini?" data-swal-text="Data akan masuk ke dashboard." class="inline-flex items-center rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-green-700">
+                                                            <i class="fas fa-check mr-1"></i> Approve
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                                    @if ($detail && ($detail->package_type ?? '') !== 'camping' && $transaction->status_pembayaran === 'success')
+                                                        <form action="{{ route('admin.transactions.camping.mark', $transaction) }}" method="POST">
+                                                            @csrf
+                                                            <button type="submit" data-swal-confirm data-swal-title="Tandai transaksi ini sebagai paket camping?" class="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-amber-600">
+                                                                <i class="fas fa-campground mr-1"></i> Tandai Camping
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="px-4 py-6 text-center text-sm text-gray-500">Belum ada tiket yang dipesan user.</td>
+                                        <td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500">Belum ada tiket yang dipesan user.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex flex-col gap-3 border-t bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="text-sm text-gray-500">
+                            Menampilkan {{ $transactions->firstItem() ?? 0 }} sampai {{ $transactions->lastItem() ?? 0 }} dari {{ $transactions->total() }} transaksi
+                        </p>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            @if ($transactions->onFirstPage())
+                                <span class="inline-flex cursor-not-allowed items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-400">
+                                    <i class="fas fa-chevron-left mr-2 text-xs"></i> Previous
+                                </span>
+                            @else
+                                <a href="{{ $transactions->previousPageUrl() }}" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
+                                    <i class="fas fa-chevron-left mr-2 text-xs"></i> Previous
+                                </a>
+                            @endif
+
+                            <span class="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700">
+                                Halaman {{ $transactions->currentPage() }} dari {{ $transactions->lastPage() }}
+                            </span>
+
+                            @if ($transactions->hasMorePages())
+                                <a href="{{ $transactions->nextPageUrl() }}" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
+                                    Next <i class="fas fa-chevron-right ml-2 text-xs"></i>
+                                </a>
+                            @else
+                                <span class="inline-flex cursor-not-allowed items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-400">
+                                    Next <i class="fas fa-chevron-right ml-2 text-xs"></i>
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="space-y-6 mt-6">
+        <div class="overflow-hidden rounded-xl bg-white shadow-sm">
+            <div class="border-b bg-gray-50 px-6 py-4">
+                <h2 class="text-lg font-bold text-gray-700">
+                    <i class="fas fa-door-open mr-2 text-emerald-500"></i>
+                    Cek Status Camping
+                </h2>
+            </div>
+
+            <div class="space-y-6 p-6">
+                <div class="rounded-xl border p-5">
+                    <div class="mb-4">
+                        <h3 class="text-base font-bold text-gray-700">Pengunjung Camping</h3>
+                        <p class="text-sm text-gray-500">Daftar transaksi paket camping dan status apakah sudah keluar dari kawasan.</p>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tanggal</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Resi</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nama</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Jumlah</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Masuk (jumlah)</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Keluar (jumlah)</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Denda</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white">
+                                @forelse(($campingTransactions ?? collect()) as $c)
+                                    @php($cdetail = $c->details->first())
+                                    <tr class="align-top transition hover:bg-gray-50">
+                                        <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{{ $c->created_at->format('d/m/Y') }}</td>
+                                        <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-900">INV-{{ str_pad($c->id, 6, '0', STR_PAD_LEFT) }}</td>
+                                        <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{{ $c->user->name ?? '-' }}</td>
+                                        <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{{ $cdetail->quantity ?? '-' }}</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            @if ($c->camping_checked_in_visitor_count)
+                                                <div class="font-semibold">{{ $c->camping_checked_in_visitor_count }} orang</div>
+                                                <div class="text-xs text-gray-500">{{ optional($c->camping_checked_in_at)->format('d/m/Y H:i') }}</div>
+                                            @else
+                                                <form action="{{ route('admin.transactions.camping.checkin', $c) }}" method="POST" class="flex items-center gap-2">
+                                                    @csrf
+                                                    <input type="number" name="checkin_count" value="{{ $cdetail->quantity ?? 0 }}" min="0" class="w-20 rounded-lg border-gray-300 px-2 py-1 text-sm">
+                                                    <button type="submit" class="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700">Catat Masuk</button>
+                                                </form>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            @if ($c->camping_checked_out_at)
+                                                <div class="font-semibold">{{ $c->camping_actual_visitor_count ?? '-' }} orang</div>
+                                                <div class="text-xs text-gray-500">{{ optional($c->camping_checked_out_at)->format('d/m/Y H:i') }}</div>
+                                            @else
+                                                @if ($c->camping_checked_in_visitor_count)
+                                                    <form action="{{ route('admin.transactions.camping.approve', $c) }}" method="POST" class="flex items-center gap-2">
+                                                        @csrf
+                                                        <input type="number" name="actual_count" value="{{ $c->camping_checked_in_visitor_count ?? ($cdetail->quantity ?? 0) }}" min="0" class="w-20 rounded-lg border-gray-300 px-2 py-1 text-sm">
+                                                        <label class="flex items-center gap-2 text-sm">
+                                                            <input type="hidden" name="trash_brought" value="0">
+                                                            <input type="checkbox" name="trash_brought" value="1" class="h-4 w-4"> Sampah dibawa
+                                                        </label>
+                                                        <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700">Catat Keluar</button>
+                                                    </form>
+                                                @else
+                                                    <div class="text-xs text-gray-500">Tunggu catat masuk</div>
+                                                @endif
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            @if ($c->camping_checked_out_at)
+                                                <span class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Sudah Keluar</span>
+                                            @else
+                                                <span class="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">Masih di Kawasan</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">{{ $c->camping_penalty > 0 ? 'Rp' . number_format($c->camping_penalty, 0, ',', '.') : '-' }}</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">
+                                            <div class="flex items-center gap-2">
+                                                <button type="button" data-ticket-detail-open data-jumlah="{{ $cdetail->quantity ?? 0 }}" data-masuk="{{ optional($cdetail?->start_date)->format('d/m/Y') ?? ($cdetail->start_date ?? '-') }}" data-keluar="{{ optional($cdetail?->end_date)->format('d/m/Y') ?? ($cdetail->end_date ?? '-') }}" data-nama="{{ $c->user->name ?? '-' }}" data-paket="{{ $cdetail?->tiketKategori?->nama_kategori ?? '-' }}" class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700">
+                                                    <i class="fas fa-eye mr-1"></i> Detail
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="px-4 py-6 text-center text-sm text-gray-500">Tidak ada data camping saat ini.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -263,6 +499,35 @@
                 if (event.target === ticketDetailModal) {
                     closeTicketDetailModal();
                 }
+            });
+
+            const transactionFilterForm = document.getElementById('transactionFilterForm');
+            const transactionSearchInput = document.getElementById('transactionSearchInput');
+            const transactionApprovalStatus = document.getElementById('transactionApprovalStatus');
+            const transactionPerPage = document.getElementById('transactionPerPage');
+            let transactionSearchTimer;
+
+            function submitTransactionFilters() {
+                if (!transactionFilterForm) {
+                    return;
+                }
+
+                transactionFilterForm.submit();
+            }
+
+            transactionSearchInput?.addEventListener('input', function () {
+                clearTimeout(transactionSearchTimer);
+                transactionSearchTimer = setTimeout(submitTransactionFilters, 450);
+            });
+
+            transactionApprovalStatus?.addEventListener('change', function () {
+                clearTimeout(transactionSearchTimer);
+                submitTransactionFilters();
+            });
+
+            transactionPerPage?.addEventListener('change', function () {
+                clearTimeout(transactionSearchTimer);
+                submitTransactionFilters();
             });
         });
     </script>

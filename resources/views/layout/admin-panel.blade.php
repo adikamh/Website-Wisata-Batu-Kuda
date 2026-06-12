@@ -13,7 +13,7 @@
             aria-label="Toggle sidebar"
             aria-expanded="true"
         >
-            <span class="sidebar-edge-icon" aria-hidden="true">◀</span>
+            <span class="sidebar-edge-icon" aria-hidden="true">&gt;</span>
         </button>
 
         <div id="adminMain" class="main-content">
@@ -95,24 +95,9 @@
             <main class="px-4 py-6 sm:px-6 lg:px-8">
                 @php($hideAdminInlineAlerts = trim($__env->yieldContent('hide_admin_inline_alerts')) === 'true')
 
-                @unless ($hideAdminInlineAlerts)
-                    @if (session('status'))
-                        <div class="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
-                            {{ session('status') }}
-                        </div>
-                    @endif
-
-                    @if ($errors->any())
-                        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                            <p class="font-semibold">Periksa kembali input yang dikirim.</p>
-                            <ul class="mt-1 list-disc pl-5">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-                @endunless
+                @if (! $hideAdminInlineAlerts)
+                    <x-sweet-alert :assets="false" />
+                @endif
 
                 @yield('admin_content')
             </main>

@@ -15,7 +15,7 @@
 <body class="@yield('body_class', 'bg-[#f8f4ec] font-sans antialiased')">
     @yield('content')
 
-    <x-sweet-alert :flash="false" :validation="false" />
+    <x-sweet-alert />
     @stack('scripts')
 </body>
 </html>

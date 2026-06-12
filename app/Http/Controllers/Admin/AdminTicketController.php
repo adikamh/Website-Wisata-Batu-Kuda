@@ -2,65 +2,100 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Admin\Concerns\RecordsAdminActivity;
 use App\Http\Controllers\Controller;
-use App\Models\AdminActivity;
 use App\Models\TiketKategori;
 use App\Models\Transaction;
+use App\Models\TransactionDetail;
 use App\Models\User;
 use App\Models\Wisata;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
-use Throwable;
+use App\Http\Controllers\Admin\Concerns\RecordsAdminActivity;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AdminReportMail;
 
 class AdminTicketController extends Controller
 {
     use RecordsAdminActivity;
-
     public function dashboard()
     {
         $this->authorizeAdmin();
 
-        $chartTransactions = Transaction::query()
-            ->select(['created_at', 'total_bayar'])
-            ->where('status_pembayaran', 'success')
-            ->whereDate('created_at', '>=', now()->subDays(6)->startOfDay())
-            ->orderBy('created_at')
-            ->get();
+        $successfulTransactions = fn () => Transaction::query()
+            ->where('status_pembayaran', 'success');
+
+        $successfulTransactionDetails = fn () => TransactionDetail::query()
+            ->whereHas('transaction', fn ($query) => $query->where('status_pembayaran', 'success'));
+
+        $dailyRevenue = $successfulTransactions()
+            ->selectRaw('DATE(created_at) as transaction_date, SUM(total_bayar) as total_revenue')
+            ->whereBetween('created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->pluck('total_revenue', 'transaction_date');
 
         $chartLabels = collect(range(6, 0))
             ->map(fn (int $daysAgo) => now()->subDays($daysAgo)->locale('id')->translatedFormat('D'))
             ->values();
 
         $chartData = collect(range(6, 0))
-            ->map(function (int $daysAgo) use ($chartTransactions) {
+            ->map(function (int $daysAgo) use ($dailyRevenue) {
                 $date = now()->subDays($daysAgo)->toDateString();
 
-                return (float) $chartTransactions
-                    ->filter(fn (Transaction $transaction) => $transaction->created_at->toDateString() === $date)
-                    ->sum('total_bayar');
+                return (float) ($dailyRevenue[$date] ?? 0);
             })
             ->values();
 
-        $recentActivities = $this->recentAdminActivities();
+        $recentActivities = collect()
+            ->merge(
+                User::query()
+                    ->latest()
+                    ->limit(3)
+                    ->get()
+                    ->map(fn (User $user) => [
+                        'type' => 'user',
+                        'icon' => 'fa-user-plus',
+                        'icon_bg' => 'bg-green-100',
+                        'icon_text' => 'text-green-600',
+                        'title' => $user->name,
+                        'description' => 'Pengguna baru terdaftar',
+                        'time' => $user->created_at,
+                    ])
+            )
+            ->merge(
+                Transaction::query()
+                    ->with(['user', 'details', 'rentalItems'])
+                    ->latest()
+                    ->limit(3)
+                    ->get()
+                    ->map(fn (Transaction $transaction) => [
+                        'type' => 'transaction',
+                        'icon' => 'fa-ticket-alt',
+                        'icon_bg' => 'bg-indigo-100',
+                        'icon_text' => 'text-indigo-600',
+                        'title' => $transaction->user->name ?? 'Pengguna',
+                        'description' => 'Pembelian tiket ' . ($transaction->details->sum('quantity') ?: 0) . ' item'
+                            . ($transaction->rentalItems->isNotEmpty() ? ' + sewa fasilitas' : ''),
+                        'time' => $transaction->created_at,
+                    ])
+            )
+            ->sortByDesc('time')
+            ->take(5)
+            ->values();
 
         $stats = [
             'total_users' => User::count(),
-            'today_revenue' => (float) Transaction::query()
-                ->where('status_pembayaran', 'success')
+            'today_revenue' => (float) $successfulTransactions()
                 ->whereDate('created_at', today())
                 ->sum('total_bayar'),
-            'tickets_sold' => (int) Transaction::query()
-                ->with('details')
-                ->where('status_pembayaran', 'success')
-                ->get()
-                ->sum(fn (Transaction $transaction) => $transaction->details->sum('quantity')),
-            'camping_orders' => Transaction::query()
-                ->whereHas('details', fn ($query) => $query->where('package_type', 'camping'))
+            'tickets_sold' => (int) $successfulTransactionDetails()
+                ->sum('quantity'),
+            'camping_orders' => (int) $successfulTransactionDetails()
+                ->where('package_type', 'camping')
                 ->count(),
         ];
 
@@ -79,7 +114,7 @@ class AdminTicketController extends Controller
         return view('Admin.users.index', compact('users'));
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorizeAdmin();
 
@@ -87,13 +122,66 @@ class AdminTicketController extends Controller
             ->latest()
             ->get();
 
+        $transactionFilters = [
+            'search' => trim((string) $request->query('search', '')),
+            'approval_status' => $request->query('approval_status', 'all'),
+            'per_page' => (int) $request->query('per_page', 10),
+        ];
+
+        if (! in_array($transactionFilters['approval_status'], ['all', 'pending', 'success'], true)) {
+            $transactionFilters['approval_status'] = 'all';
+        }
+
+        if (! in_array($transactionFilters['per_page'], [10, 25, 50], true)) {
+            $transactionFilters['per_page'] = 10;
+        }
+
         $transactions = Transaction::query()
             ->with(['user', 'details.tiketKategori', 'rentalItems'])
+            ->when($transactionFilters['search'] !== '', function ($query) use ($transactionFilters) {
+                $search = $transactionFilters['search'];
+                $receiptId = preg_replace('/\D/', '', $search);
+
+                $query->where(function ($query) use ($search, $receiptId) {
+                    $query->whereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%' . $search . '%'));
+
+                    if ($receiptId !== '') {
+                        $query->orWhere('transactions.id', (int) $receiptId);
+                    }
+                });
+            })
+            ->when($transactionFilters['approval_status'] !== 'all', fn ($query) => $query->where('status_pembayaran', $transactionFilters['approval_status']))
+            // exclude camping transactions that are already approved (they are shown in the Camping table)
+            ->where(function ($q) {
+                $q->where('status_pembayaran', '!=', 'success')
+                    ->orWhereDoesntHave('details', function ($dq) {
+                        $dq->where('package_type', 'camping')
+                            ->orWhereHas('tiketKategori', function ($kq) {
+                                $kq->whereRaw('LOWER(nama_kategori) LIKE ?', ['%camping%'])
+                                   ->orWhereRaw('LOWER(nama_kategori) LIKE ?', ['%kemping%']);
+                            });
+                    });
+            })
             ->latest()
-            ->limit(20)
+            ->paginate($transactionFilters['per_page'])
+            ->withQueryString();
+
+        // separate list for camping transactions to show camping exit status
+        $campingTransactions = Transaction::query()
+            ->with(['user', 'details.tiketKategori', 'rentalItems'])
+            ->where('status_pembayaran', 'success')
+                    ->whereHas('details', function ($q) {
+                        $q->where('package_type', 'camping')
+                            ->orWhereHas('tiketKategori', function ($kq) {
+                                $kq->whereRaw('LOWER(nama_kategori) LIKE ?', ['%camping%'])
+                                   ->orWhereRaw('LOWER(nama_kategori) LIKE ?', ['%kemping%']);
+                            });
+                    })
+            ->latest()
+            ->limit(50)
             ->get();
 
-        return view('Admin.tickets.index', compact('tickets', 'transactions'));
+        return view('Admin.tickets.index', compact('tickets', 'transactions', 'transactionFilters', 'campingTransactions'));
     }
 
     public function store(Request $request)
@@ -102,14 +190,12 @@ class AdminTicketController extends Controller
 
         $validated = $this->validateTicket($request);
 
-        $ticket = TiketKategori::create([
+        TiketKategori::create([
             'wisata_id' => $this->batuKuda()->id,
             'nama_kategori' => $validated['nama_kategori'],
             'deskripsi' => $validated['deskripsi'] ?? null,
             'harga' => $validated['harga'],
         ]);
-
-        $this->recordAdminActivity('ticket_created', 'menambahkan tiket "' . $ticket->nama_kategori . '"', $ticket);
 
         return $this->redirectToTickets('Tiket berhasil ditambahkan.');
     }
@@ -120,12 +206,10 @@ class AdminTicketController extends Controller
 
         $validated = $this->validateUser($request);
 
-        $createdUser = User::create([
+        User::create([
             ...$validated,
             'password' => Hash::make($validated['password']),
         ]);
-
-        $this->recordAdminActivity('user_created', 'menambahkan akun "' . $createdUser->name . '"', $createdUser);
 
         return redirect()
             ->route('admin.users')
@@ -146,8 +230,6 @@ class AdminTicketController extends Controller
 
         $user->update($validated);
 
-        $this->recordAdminActivity('user_updated', 'memperbarui akun "' . $user->name . '"', $user);
-
         return redirect()
             ->route('admin.users')
             ->with('status', 'Pengguna berhasil diperbarui.');
@@ -159,11 +241,7 @@ class AdminTicketController extends Controller
 
         abort_if(Auth::id() === $user->id, 422, 'Akun admin yang sedang login tidak bisa dihapus.');
 
-        $deletedUserName = $user->name;
-
         $user->delete();
-
-        $this->recordAdminActivity('user_deleted', 'menghapus akun "' . $deletedUserName . '"', $user);
 
         return redirect()
             ->route('admin.users')
@@ -176,8 +254,6 @@ class AdminTicketController extends Controller
 
         $ticket->update($this->validateTicket($request));
 
-        $this->recordAdminActivity('ticket_updated', 'memperbarui tiket "' . $ticket->nama_kategori . '"', $ticket);
-
         return $this->redirectToTickets('Tiket berhasil diperbarui.');
     }
 
@@ -185,20 +261,53 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
-        $deletedTicketName = $ticket->nama_kategori;
-
         $ticket->delete();
 
-        $this->recordAdminActivity('ticket_deleted', 'menghapus tiket "' . $deletedTicketName . '"', $ticket);
-
         return $this->redirectToTickets('Tiket berhasil dihapus.');
+    }
+
+    public function approveTransaction(Transaction $transaction)
+    {
+        $this->authorizeAdmin();
+
+        if ($transaction->status_pembayaran !== 'pending') {
+            return $this->redirectToTickets('Hanya transaksi dengan status pending yang dapat di-approve.');
+        }
+
+        DB::transaction(function () use ($transaction) {
+            $transaction->update([
+                'status_pembayaran' => 'success',
+            ]);
+
+            $detail = $transaction->details()->with('tiketKategori')->first();
+
+            if ($detail) {
+                $categoryName = strtolower($detail->tiketKategori?->nama_kategori ?? '');
+                $isCamping = ($detail->package_type ?? '') === 'camping' || str_contains($categoryName, 'camping') || str_contains($categoryName, 'kemping');
+
+                if ($isCamping && ($detail->package_type ?? '') !== 'camping') {
+                    $detail->update(['package_type' => 'camping']);
+                }
+            }
+        });
+
+        $this->recordAdminActivity(
+            'ticket_approved',
+            'meng-approve transaksi INV-' . str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT),
+            $transaction,
+            [
+                'icon' => 'fa-check-circle',
+                'icon_bg' => 'bg-green-100',
+                'icon_text' => 'text-green-600',
+            ]
+        );
+
+        return $this->redirectToTickets('Transaksi berhasil di-approve dan akan muncul di dashboard.');
     }
 
     public function downloadVisitorPdf()
     {
         $this->authorizeAdmin();
-
-        $this->recordAdminActivity('visitor_report_downloaded', 'mengunduh laporan daftar pengunjung');
 
         $lines = [
             'LAPORAN DAFTAR PENGUNJUNG BATU KUDA',
@@ -206,26 +315,9 @@ class AdminTicketController extends Controller
             '',
         ];
 
-        foreach ($this->reportTransactions() as $transaction) {
-            $detail = $transaction->details->first();
-            $lines[] = 'Resi: INV-' . str_pad($transaction->id, 6, '0', STR_PAD_LEFT);
-            $lines[] = 'Nama: ' . ($transaction->user->name ?? '-');
-            $lines[] = 'Email: ' . ($transaction->user->email ?? '-');
-            $lines[] = 'Tiket: ' . ($detail?->tiketKategori?->nama_kategori ?? '-');
-            $lines[] = 'Jumlah: ' . ($detail->quantity ?? 0) . ' orang';
-            $lines[] = 'Tanggal Masuk: ' . ($detail?->start_date?->format('d/m/Y') ?? '-');
-            $lines[] = 'Tanggal Keluar: ' . ($detail?->end_date?->format('d/m/Y') ?? '-');
-            $lines[] = 'Status: ' . strtoupper($transaction->status_pembayaran);
-            $lines[] = str_repeat('-', 72);
-        }
+        $filename = $this->reportFilename('laporan-daftar-pengunjung', 'pdf');
 
-        if (count($lines) === 3) {
-            $lines[] = 'Belum ada data pengunjung.';
-        }
-
-        $filename = 'laporan-daftar-pengunjung-' . now()->format('Ymd-His') . '.pdf';
-
-        return response($this->makeSimplePdf($lines), 200, [
+        return response($this->visitorPdfContent($this->visitorReportPayload()), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
@@ -235,16 +327,105 @@ class AdminTicketController extends Controller
     {
         $this->authorizeAdmin();
 
-        $this->recordAdminActivity('finance_report_downloaded', 'mengunduh laporan keuangan');
-
         $transactions = $this->reportTransactions();
         $totalRevenue = $transactions->sum('total_bayar');
         $filename = 'laporan-keuangan-' . now()->format('Ymd-His') . '.xls';
 
         return response()
-            ->view('Admin.tickets.reports-excel', compact('transactions', 'totalRevenue'))
+            ->view('Admin.tickets.reports-excel', $this->financeReportPayload())
             ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    public function emailVisitorPdf()
+    {
+        $this->authorizeAdmin();
+
+        $filename = $this->reportFilename('laporan-daftar-pengunjung', 'pdf');
+
+        $this->sendReportEmail(
+            'Laporan Daftar Pengunjung Batu Kuda',
+            'Terlampir laporan daftar pengunjung Batu Kuda yang Anda minta dari admin dashboard.',
+            $filename,
+            $this->visitorPdfContent($this->visitorReportPayload()),
+            'application/pdf'
+        );
+
+        $this->recordAdminActivity('visitor_report_emailed', 'mengirim laporan daftar pengunjung ke email admin');
+
+        return $this->redirectToTickets('Laporan daftar pengunjung berhasil dikirim ke email admin yang login.');
+    }
+
+    public function emailFinanceExcel()
+    {
+        $this->authorizeAdmin();
+
+        $filename = $this->reportFilename('laporan-keuangan', 'xls');
+
+        $this->sendReportEmail(
+            'Laporan Keuangan Batu Kuda',
+            'Terlampir laporan keuangan Batu Kuda yang Anda minta dari admin dashboard.',
+            $filename,
+            view('Admin.tickets.reports-excel', $this->financeReportPayload())->render(),
+            'application/vnd.ms-excel'
+        );
+
+        $this->recordAdminActivity('finance_report_emailed', 'mengirim laporan keuangan ke email admin');
+
+        return $this->redirectToTickets('Laporan keuangan berhasil dikirim ke email admin yang login.');
+    }
+
+    private function visitorReportPayload(): array
+    {
+        return [
+            ...$this->reportExportContext(),
+            'transactions' => $this->reportTransactions(),
+        ];
+    }
+
+    private function financeReportPayload(): array
+    {
+        $transactions = $this->reportTransactions();
+
+        return [
+            ...$this->reportExportContext(),
+            'transactions' => $transactions,
+            'totalRevenue' => $transactions->sum('total_bayar'),
+        ];
+    }
+
+    private function reportExportContext(): array
+    {
+        $admin = Auth::user();
+        $exportedByUsername = $admin?->username ?: ($admin?->name ?: ($admin?->email ?: 'admin'));
+
+        return [
+            'printedAt' => now(),
+            'exportedBy' => $admin,
+            'exportedByUsername' => $exportedByUsername,
+            'watermarkText' => 'Diekspor oleh: ' . $exportedByUsername,
+        ];
+    }
+
+    private function visitorPdfContent(array $payload): string
+    {
+        return Pdf::loadView('Admin.tickets.reports-visitors-pdf', $payload)
+            ->setPaper('a4', 'landscape')
+            ->output();
+    }
+
+    private function reportFilename(string $prefix, string $extension): string
+    {
+        return $prefix . '-' . now()->format('Ymd-His') . '.' . $extension;
+    }
+
+    private function sendReportEmail(string $subject, string $body, string $filename, string $content, string $mime): void
+    {
+        $admin = Auth::user();
+
+        abort_if(blank($admin?->email), 422, 'Email admin yang sedang login belum tersedia.');
+
+        Mail::to($admin->email)->send(new AdminReportMail($subject, $body, $filename, $content, $mime));
     }
 
     private function validateTicket(Request $request): array
@@ -302,32 +483,6 @@ class AdminTicketController extends Controller
             ->with(['user', 'details.tiketKategori', 'rentalItems'])
             ->latest()
             ->get();
-    }
-
-    private function recentAdminActivities()
-    {
-        try {
-            if (! Schema::hasTable('admin_activities')) {
-                return collect();
-            }
-
-            return AdminActivity::query()
-                ->latest()
-                ->limit(5)
-                ->get()
-                ->map(fn (AdminActivity $activity) => [
-                    'icon' => $activity->icon ?: 'fa-clipboard-list',
-                    'icon_bg' => $activity->icon_bg ?: 'bg-gray-100',
-                    'icon_text' => $activity->icon_text ?: 'text-gray-600',
-                    'title' => $activity->title ?: $activity->admin_name,
-                    'description' => $activity->description,
-                    'time' => $activity->created_at,
-                ]);
-        } catch (Throwable $exception) {
-            report($exception);
-
-            return collect();
-        }
     }
 
     private function makeSimplePdf(array $lines): string
