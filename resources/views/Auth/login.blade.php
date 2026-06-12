@@ -61,38 +61,7 @@
                     <p>Masuk ke akun Batu Kuda Wisata Anda</p>
                 </div>
 
-                @if ($errors->any())
-                <div class="alert alert-error">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                    <div>
-                        @foreach ($errors->all() as $error)
-                        <p>{{ $error }}</p>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
-
-                @if (session('status'))
-                <div class="alert alert-success">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <p>{{ session('status') }}</p>
-                </div>
-                @endif
-
-                @if (session('success'))
-                <div class="alert alert-success auto-dismiss-alert" id="successAlert">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <p>{{ session('success') }}</p>
-                </div>
-                @endif
+                {{-- Flash and validation messages are handled globally by x-sweet-alert in layout.auth --}}
 
                 <form method="POST" action="{{ route('login.submit') }}" class="auth-form" id="loginForm">
                     @csrf
@@ -195,27 +164,5 @@
         </div>
     </div>
 
-    @if (session('success'))
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const alert = document.getElementById('successAlert');
-
-            if (!alert) {
-                return;
-            }
-
-            alert.style.transition = 'opacity 0.45s ease, transform 0.45s ease, margin 0.45s ease';
-
-            window.setTimeout(() => {
-                alert.style.opacity = '0';
-                alert.style.transform = 'translateY(-8px)';
-                alert.style.marginBottom = '0';
-
-                window.setTimeout(() => {
-                    alert.remove();
-                }, 450);
-            }, 5000);
-        });
-    </script>
-    @endif
+    {{-- No inline auto-dismiss; SweetAlert handles notifications and timing. --}}
 @endsection

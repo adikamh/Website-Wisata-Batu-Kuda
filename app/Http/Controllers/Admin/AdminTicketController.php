@@ -15,9 +15,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use App\Http\Controllers\Admin\Concerns\RecordsAdminActivity;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AdminReportMail;
 
 class AdminTicketController extends Controller
 {
+    use RecordsAdminActivity;
     public function dashboard()
     {
         $this->authorizeAdmin();
@@ -147,11 +151,37 @@ class AdminTicketController extends Controller
                 });
             })
             ->when($transactionFilters['approval_status'] !== 'all', fn ($query) => $query->where('status_pembayaran', $transactionFilters['approval_status']))
+            // exclude camping transactions that are already approved (they are shown in the Camping table)
+            ->where(function ($q) {
+                $q->where('status_pembayaran', '!=', 'success')
+                    ->orWhereDoesntHave('details', function ($dq) {
+                        $dq->where('package_type', 'camping')
+                            ->orWhereHas('tiketKategori', function ($kq) {
+                                $kq->whereRaw('LOWER(nama_kategori) LIKE ?', ['%camping%'])
+                                   ->orWhereRaw('LOWER(nama_kategori) LIKE ?', ['%kemping%']);
+                            });
+                    });
+            })
             ->latest()
             ->paginate($transactionFilters['per_page'])
             ->withQueryString();
 
-        return view('Admin.tickets.index', compact('tickets', 'transactions', 'transactionFilters'));
+        // separate list for camping transactions to show camping exit status
+        $campingTransactions = Transaction::query()
+            ->with(['user', 'details.tiketKategori', 'rentalItems'])
+            ->where('status_pembayaran', 'success')
+                    ->whereHas('details', function ($q) {
+                        $q->where('package_type', 'camping')
+                            ->orWhereHas('tiketKategori', function ($kq) {
+                                $kq->whereRaw('LOWER(nama_kategori) LIKE ?', ['%camping%'])
+                                   ->orWhereRaw('LOWER(nama_kategori) LIKE ?', ['%kemping%']);
+                            });
+                    })
+            ->latest()
+            ->limit(50)
+            ->get();
+
+        return view('Admin.tickets.index', compact('tickets', 'transactions', 'transactionFilters', 'campingTransactions'));
     }
 
     public function store(Request $request)
@@ -244,9 +274,22 @@ class AdminTicketController extends Controller
             return $this->redirectToTickets('Hanya transaksi dengan status pending yang dapat di-approve.');
         }
 
-        $transaction->update([
-            'status_pembayaran' => 'success',
-        ]);
+        DB::transaction(function () use ($transaction) {
+            $transaction->update([
+                'status_pembayaran' => 'success',
+            ]);
+
+            $detail = $transaction->details()->with('tiketKategori')->first();
+
+            if ($detail) {
+                $categoryName = strtolower($detail->tiketKategori?->nama_kategori ?? '');
+                $isCamping = ($detail->package_type ?? '') === 'camping' || str_contains($categoryName, 'camping') || str_contains($categoryName, 'kemping');
+
+                if ($isCamping && ($detail->package_type ?? '') !== 'camping') {
+                    $detail->update(['package_type' => 'camping']);
+                }
+            }
+        });
 
         $this->recordAdminActivity(
             'ticket_approved',
@@ -271,6 +314,8 @@ class AdminTicketController extends Controller
             'Dicetak: ' . now()->format('d/m/Y H:i'),
             '',
         ];
+
+        $filename = $this->reportFilename('laporan-daftar-pengunjung', 'pdf');
 
         return response($this->visitorPdfContent($this->visitorReportPayload()), 200, [
             'Content-Type' => 'application/pdf',

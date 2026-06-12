@@ -3,8 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Models\TransactionDetail;
+use App\Models\TransactionRentalItem;
+use App\Models\ETicket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Mail\AdminReportMail;
 
 class XenditController extends Controller
 {
@@ -198,6 +204,58 @@ class XenditController extends Controller
                 'transaction_id' => $transaction->id,
                 'invoice_id' => $payload['data']['id'] ?? null,
             ]);
+
+            // After marking success, generate KTP-sized PDF ticket and email to user (best-effort)
+            try {
+                $detail = TransactionDetail::where('transaction_id', $transaction->id)->first();
+
+                $eTicket = ETicket::where('transaction_detail_id', $detail?->id)->first();
+                $ticketCode = $eTicket->ticket_code ?? ('INV-' . str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT));
+
+                $rentalItems = TransactionRentalItem::where('transaction_id', $transaction->id)
+                    ->get()
+                    ->map(function ($r) {
+                        return [
+                            'name' => $r->facility_name,
+                            'quantity' => $r->quantity,
+                            'price' => $r->price,
+                            'subtotal' => $r->subtotal,
+                        ];
+                    })->values()->all();
+
+                $pdfContent = Pdf::loadView('pdf.ticket_ktp', [
+                    'transaction' => $transaction,
+                    'detail' => $detail,
+                    'ticketCode' => $ticketCode,
+                    'rentalItems' => $rentalItems,
+                    'packageName' => $detail?->tiketKategori?->nama_kategori ?? '',
+                    'user' => $transaction->user,
+                ])->setPaper([86 * 2.8346456693, 54 * 2.8346456693])->output();
+
+                $pdfFilename = 'tiket-' . $ticketCode . '.pdf';
+
+                $userEmail = $transaction->user?->email ?? null;
+                if ($userEmail) {
+                    // prevent duplicate sends: only send if not already emailed
+                    if (empty($transaction->ticket_emailed_at)) {
+                        $subject = 'Tiket Batu Kuda - ' . $ticketCode;
+                        $body = 'Berikut terlampir tiket pembayaran Anda dari Batu Kuda.';
+
+                        Mail::to($userEmail)->send(new AdminReportMail($subject, $body, $pdfFilename, $pdfContent, 'application/pdf'));
+
+                        $transaction->ticket_emailed_at = now();
+                        $transaction->save();
+
+                        Log::info('Ticket email sent to user after payment', ['transaction_id' => $transaction->id, 'email' => $userEmail]);
+                    } else {
+                        Log::info('Ticket email already sent earlier; skipping duplicate', ['transaction_id' => $transaction->id]);
+                    }
+                } else {
+                    Log::warning('User email missing; cannot send ticket', ['transaction_id' => $transaction->id]);
+                }
+            } catch (\Throwable $e) {
+                Log::error('Failed to generate/send ticket PDF after payment', ['error' => $e->getMessage(), 'transaction_id' => $transaction->id]);
+            }
 
             return response()->json(['success' => true]);
 

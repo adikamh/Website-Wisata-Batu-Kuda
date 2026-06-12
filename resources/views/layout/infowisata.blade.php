@@ -49,20 +49,7 @@
     </div>
 </header>
 
-@if(session('success'))
-<div class="iw-flash success" id="flashMsg">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-    {{ session('success') }}
-    <button onclick="this.parentElement.remove()">×</button>
-</div>
-@endif
-@if(session('error'))
-<div class="iw-flash error" id="flashMsg">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-    {{ session('error') }}
-    <button onclick="this.parentElement.remove()">×</button>
-</div>
-@endif
+{{-- SweetAlert2 handles flash messages globally via layout.main's x-sweet-alert component --}}
 
 <div class="iw-tabs-wrap" id="iwTabs">
     <div class="iw-tabs">

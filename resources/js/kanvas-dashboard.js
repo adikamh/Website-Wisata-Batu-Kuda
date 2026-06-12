@@ -182,7 +182,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             window.location.reload();
         } catch (error) {
-            window.alert(error.message || 'Terjadi kesalahan saat menyimpan konten.');
+            const msg = error.message || 'Terjadi kesalahan saat menyimpan konten.';
+            if (window.BatuKudaAlert?.error) {
+                window.BatuKudaAlert.error(msg);
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'error', title: 'Gagal', text: msg });
+            } else {
+                window.alert(msg);
+            }
         } finally {
             saveButton.disabled = false;
             saveButton.textContent = saveButtonDefaultText;

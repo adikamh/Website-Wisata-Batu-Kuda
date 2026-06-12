@@ -603,7 +603,17 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
 
         const galleryId = deleteBtn.dataset.galleryDelete;
-        if (!galleryId || !window.confirm('Hapus foto ini dari galeri?')) return;
+        if (!galleryId) return;
+
+        const delResult = await confirmAlert({
+            title: 'Hapus foto ini dari galeri?',
+            text: 'Foto yang dihapus tidak bisa dikembalikan.',
+            icon: 'warning',
+            confirmButtonText: 'Ya, hapus',
+            cancelButtonText: 'Batal',
+        });
+
+        if (!delResult.isConfirmed) return;
 
         deleteBtn.disabled = true;
 

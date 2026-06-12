@@ -199,7 +199,6 @@
         </a>
     </div>
 
-    {{-- ── PANEL KANAN (Visual) ── --}}
     <div class="auth-visual register-visual">
         <div class="visual-bg">
             <img src="{{ $authVisualImage }}" alt="Visual register Batu Kuda" loading="eager">

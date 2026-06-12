@@ -61,6 +61,7 @@
 
                     <form action="{{ route('tiket.store') }}" method="POST" class="ticket-form">
                         @csrf
+                        <input type="hidden" name="immediate_paid" value="1">
 
                         <div class="ticket-form-grid ticket-form-grid--identity">
                             <label class="ticket-field">

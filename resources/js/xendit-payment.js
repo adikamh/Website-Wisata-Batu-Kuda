@@ -74,6 +74,15 @@ class XenditPayment {
                 throw new Error(txData.message || `Error: ${txData.errors || 'Unknown error'}`);
             }
 
+            // If backend reports transaction already paid (immediate paid flow), show success and do not create invoice
+            if (txData.status_pembayaran === 'success') {
+                this.showSuccess('Pembayaran otomatis tercatat. Tiket telah dikirim ke email Anda.');
+                if (txData.redirect_after_order) {
+                    window.location.href = txData.redirect_after_order;
+                }
+                return;
+            }
+
             if (!txData.transaction_id) {
                 throw new Error('Transaksi berhasil dibuat tapi ID tidak ditemukan');
             }
