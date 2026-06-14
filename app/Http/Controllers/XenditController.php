@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\UserTicketMail;
 use App\Models\Transaction;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class XenditController extends Controller
 {
@@ -51,7 +55,10 @@ class XenditController extends Controller
                 'customer_name' => 'required|string',
             ]);
 
-            $transaction = Transaction::findOrFail($validated['transaction_id']);
+            $transaction = Transaction::query()
+                ->whereKey($validated['transaction_id'])
+                ->when(! Auth::user()?->isAdmin(), fn ($query) => $query->where('user_id', Auth::id()))
+                ->firstOrFail();
 
             // Cek apakah invoice sudah dibuat
             if ($transaction->xendit_invoice_id) {
@@ -79,8 +86,13 @@ class XenditController extends Controller
             $invoiceRequest->setAmount((float) $transaction->total_bayar);
             $invoiceRequest->setPayerEmail($validated['customer_email']);
             $invoiceRequest->setDescription('Pembelian Tiket Wisata Batu Kuda');
-            $invoiceRequest->setSuccessRedirectUrl(route('xendit.success'));
-            $invoiceRequest->setFailureRedirectUrl(route('xendit.failed'));
+            $invoiceRequest->setSuccessRedirectUrl(route('xendit.success', [
+                'transaction_id' => $transaction->id,
+                'external_id' => $externalId,
+            ]));
+            $invoiceRequest->setFailureRedirectUrl(route('xendit.failed', [
+                'transaction_id' => $transaction->id,
+            ]));
 
             // Create invoice
             $invoiceApi = new \Xendit\Invoice\InvoiceApi();
@@ -194,6 +206,8 @@ class XenditController extends Controller
                 'xendit_response' => json_encode($payload),
             ]);
 
+            $this->sendTicketEmailIfNeeded($transaction->fresh());
+
             Log::info('Payment marked as success', [
                 'transaction_id' => $transaction->id,
                 'invoice_id' => $payload['data']['id'] ?? null,
@@ -256,8 +270,8 @@ class XenditController extends Controller
         $expectedToken = config('services.xendit.callback_token');
 
         if (!$expectedToken) {
-            // Jika tidak ada token di config, skip verifikasi (optional)
-            return true;
+            Log::error('XENDIT_CALLBACK_TOKEN is not configured; webhook rejected.');
+            return false;
         }
 
         return hash_equals($xIncomingCallbackTokenHeader ?? '', $expectedToken);
@@ -268,7 +282,36 @@ class XenditController extends Controller
      */
     public function success(Request $request)
     {
-        return redirect('/')->with('success', 'Pembayaran berhasil! Invoice URL: ' . ($request->get('invoice_url') ?? ''));
+        $transaction = $this->resolveRedirectTransaction($request);
+
+        if (! $transaction) {
+            return redirect()
+                ->route('tiket')
+                ->with('warning', 'Pembayaran diproses oleh Xendit, tetapi transaksi tidak ditemukan di sistem.');
+        }
+
+        try {
+            if ($transaction->status_pembayaran !== 'success') {
+                $transaction->update([
+                    'status_pembayaran' => 'success',
+                ]);
+            }
+
+            $this->sendTicketEmailIfNeeded($transaction->fresh());
+
+            return redirect()
+                ->route('tiket')
+                ->with('success', 'Payment berhasil. Tiket dikirim ke email, silakan cek email Anda.');
+        } catch (\Throwable $e) {
+            Log::error('Failed to finalize Xendit success redirect', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('tiket')
+                ->with('warning', 'Payment berhasil, tetapi tiket belum berhasil dikirim. Silakan hubungi admin.');
+        }
     }
 
     /**
@@ -277,6 +320,96 @@ class XenditController extends Controller
     public function failed(Request $request)
     {
         return redirect('/')->with('error', 'Pembayaran gagal. Silakan coba lagi.');
+    }
+
+    private function resolveRedirectTransaction(Request $request): ?Transaction
+    {
+        $query = Transaction::query();
+
+        if ($request->filled('external_id')) {
+            return $query
+                ->where('xendit_external_id', $request->query('external_id'))
+                ->first();
+        }
+
+        if ($request->filled('transaction_id')) {
+            return $query
+                ->whereKey($request->query('transaction_id'))
+                ->first();
+        }
+
+        return null;
+    }
+
+    private function sendTicketEmailIfNeeded(?Transaction $transaction): void
+    {
+        if (! $transaction || $transaction->ticket_emailed_at) {
+            return;
+        }
+
+        $transaction->loadMissing([
+            'user',
+            'details.tiketKategori',
+            'details.eTicket',
+            'rentalItems',
+        ]);
+
+        $detail = $transaction->details->first();
+        $user = $transaction->user;
+
+        if (! $detail || blank($user?->email)) {
+            Log::warning('Ticket email skipped because transaction detail or user email is missing', [
+                'transaction_id' => $transaction->id,
+            ]);
+
+            return;
+        }
+
+        $ticketCode = $detail->eTicket?->ticket_code
+            ?? 'BK-' . now()->format('YmdHis') . '-' . $transaction->id;
+
+        $rentalItems = $transaction->rentalItems
+            ->map(fn ($item) => [
+                'name' => $item->facility_name,
+                'quantity' => (int) $item->quantity,
+                'price' => (int) $item->price,
+                'subtotal' => (int) $item->subtotal,
+            ])
+            ->values()
+            ->all();
+
+        $packageName = $detail->tiketKategori?->nama_kategori ?? 'Tiket Batu Kuda';
+
+        $ktpPaperSize = [0, 0, 86 * 2.8346456693, 54 * 2.8346456693];
+
+        $pdfContent = Pdf::loadView('pdf.ticket_ktp', [
+            'transaction' => $transaction,
+            'detail' => $detail,
+            'ticketCode' => $ticketCode,
+            'rentalItems' => $rentalItems,
+            'packageName' => $packageName,
+            'user' => $user,
+        ])->setPaper($ktpPaperSize)->output();
+
+        Mail::to($user->email)->send(new UserTicketMail(
+            transaction: $transaction,
+            detail: $detail,
+            ticketCode: $ticketCode,
+            rentalItems: $rentalItems,
+            packageName: $packageName,
+            pdfContent: $pdfContent,
+            pdfFilename: 'tiket-' . $ticketCode . '.pdf'
+        ));
+
+        $transaction->forceFill([
+            'ticket_emailed_at' => now(),
+        ])->save();
+
+        Log::info('Ticket PDF email sent after Xendit payment success', [
+            'transaction_id' => $transaction->id,
+            'ticket_code' => $ticketCode,
+            'email' => $user->email,
+        ]);
     }
 
     /**

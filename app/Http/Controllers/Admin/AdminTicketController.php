@@ -173,6 +173,7 @@ class AdminTicketController extends Controller
             'wisata_id' => $this->batuKuda()->id,
             'nama_kategori' => $validated['nama_kategori'],
             'deskripsi' => $validated['deskripsi'] ?? null,
+            'package_type' => $validated['package_type'],
             'harga' => $validated['harga'],
         ]);
 
@@ -412,10 +413,13 @@ class AdminTicketController extends Controller
         return $request->validate([
             'nama_kategori' => ['required', 'string', 'max:50'],
             'deskripsi' => ['nullable', 'string', 'max:500'],
+            'package_type' => ['required', Rule::in(['visit', 'camping'])],
             'harga' => ['required', 'numeric', 'min:0', 'max:99999999'],
         ], [
             'nama_kategori.required' => 'Nama tiket wajib diisi.',
             'deskripsi.max' => 'Deskripsi maksimal 500 karakter.',
+            'package_type.required' => 'Kategori tiket wajib dipilih.',
+            'package_type.in' => 'Kategori tiket tidak valid.',
             'harga.required' => 'Harga tiket wajib diisi.',
             'harga.numeric' => 'Harga tiket harus berupa angka.',
         ]);

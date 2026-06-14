@@ -28,4 +28,9 @@ class TransactionDetail extends Model
     {
         return $this->belongsTo(TiketKategori::class, 'tiket_kategori_id');
     }
+
+    public function eTicket()
+    {
+        return $this->hasOne(ETicket::class, 'transaction_detail_id');
+    }
 }

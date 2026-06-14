@@ -25,6 +25,7 @@ class Transaction extends Model
         'camping_checked_in_visitor_count',
         'camping_penalty',
         'camping_penalty_reason',
+        'ticket_emailed_at',
     ];
 
     protected $casts = [
@@ -34,6 +35,7 @@ class Transaction extends Model
         'camping_actual_visitor_count' => 'integer',
         'camping_checked_in_visitor_count' => 'integer',
         'camping_penalty' => 'integer',
+        'ticket_emailed_at' => 'datetime',
     ];
 
     public function user()

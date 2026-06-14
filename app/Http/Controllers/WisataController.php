@@ -17,10 +17,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\AdminReportMail;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -215,43 +211,6 @@ class WisataController
 
             return $transaction;
         });
-        // If immediate_paid flag present, mark as paid and send ticket now
-        if ($request->boolean('immediate_paid')) {
-            try {
-                $transaction->update(['status_pembayaran' => 'success']);
-
-                $detail = $transaction->details()->first();
-
-                $userEmail = Auth::user()->email ?? $transaction->user?->email ?? null;
-
-                if ($userEmail && empty($transaction->ticket_emailed_at)) {
-                    $pdfContent = Pdf::loadView('pdf.ticket_ktp', [
-                        'transaction' => $transaction,
-                        'detail' => $detail,
-                        'ticketCode' => $ticketCode,
-                        'rentalItems' => $rentalSummary->values()->all(),
-                        'packageName' => $package['name'],
-                        'user' => Auth::user(),
-                    ])->setPaper([86 * 2.8346456693, 54 * 2.8346456693])->output();
-
-                    $pdfFilename = 'tiket-' . $ticketCode . '.pdf';
-
-                    $subject = 'Tiket Batu Kuda - ' . $ticketCode;
-                    $body = 'Berikut terlampir tiket pembayaran Anda dari Batu Kuda.';
-
-                    Mail::to($userEmail)->send(new AdminReportMail($subject, $body, $pdfFilename, $pdfContent, 'application/pdf'));
-
-                    if (Schema::hasColumn('transactions', 'ticket_emailed_at')) {
-                        $transaction->ticket_emailed_at = now();
-                        $transaction->save();
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Failed immediate payment/email', ['error' => $e->getMessage(), 'transaction_id' => $transaction->id ?? null]);
-            }
-        }
-
-        // (No-op) ticket already sent above when `immediate_paid` is set.
         // Return JSON for AJAX requests (payment integration)
         if ($request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json([
@@ -321,6 +280,7 @@ class WisataController
                 'wisata_id' => $wisata->id,
                 'nama_kategori' => 'Kunjungan Harian',
                 'deskripsi' => 'Tiket masuk reguler untuk menikmati area wisata Batu Kuda.',
+                'package_type' => 'visit',
                 'harga' => 10000,
             ]);
 
@@ -331,7 +291,8 @@ class WisataController
 
         return $tickets
             ->mapWithKeys(function (TiketKategori $ticket) {
-                $isCamping = str_contains(strtolower($ticket->nama_kategori), 'camping')
+                $isCamping = ($ticket->package_type ?? null) === 'camping'
+                    || str_contains(strtolower($ticket->nama_kategori), 'camping')
                     || str_contains(strtolower($ticket->nama_kategori), 'kemping');
 
                 return [

@@ -7,6 +7,17 @@
     {{ $ticket->deskripsi ?: '-' }}
 </td>
 <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
+    @if (($ticket->package_type ?? 'visit') === 'camping')
+        <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+            <i class="fas fa-campground mr-1"></i> Camping
+        </span>
+    @else
+        <span class="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
+            <i class="fas fa-walking mr-1"></i> Berkunjung
+        </span>
+    @endif
+</td>
+<td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
     Rp {{ number_format($ticket->harga, 0, ',', '.') }}
 </td>
 <td class="px-4 py-4 whitespace-nowrap text-sm">
@@ -38,6 +49,15 @@
                     <label class="block text-left">
                         <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Deskripsi</span>
                         <textarea name="deskripsi" rows="3" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ $useOldInput ? old('deskripsi') : $ticket->deskripsi }}</textarea>
+                    </label>
+
+                    <label class="block text-left">
+                        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Kategori Tiket</span>
+                        @php($selectedPackageType = $useOldInput ? old('package_type', $ticket->package_type ?? 'visit') : ($ticket->package_type ?? 'visit'))
+                        <select name="package_type" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="visit" @selected($selectedPackageType === 'visit')>Berkunjung</option>
+                            <option value="camping" @selected($selectedPackageType === 'camping')>Camping</option>
+                        </select>
                     </label>
 
                     <label class="block text-left">

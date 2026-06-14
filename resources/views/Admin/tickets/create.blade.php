@@ -30,6 +30,14 @@
                 </label>
 
                 <label class="block">
+                    <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Kategori Tiket</span>
+                    <select name="package_type" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="visit" @selected(($useOldInput ? old('package_type') : 'visit') === 'visit')>Berkunjung</option>
+                        <option value="camping" @selected(($useOldInput ? old('package_type') : 'visit') === 'camping')>Camping</option>
+                    </select>
+                </label>
+
+                <label class="block">
                     <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Harga</span>
                     <input type="number" name="harga" value="{{ $useOldInput ? old('harga') : null }}" min="0" step="1000" placeholder="15000" class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 </label>

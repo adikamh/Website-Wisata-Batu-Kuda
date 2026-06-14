@@ -8,7 +8,7 @@ class TiketKategori extends Model
 {
     protected $table = 'tiket_kategori';
     
-    protected $fillable = ['wisata_id', 'nama_kategori', 'deskripsi', 'harga'];
+    protected $fillable = ['wisata_id', 'nama_kategori', 'deskripsi', 'package_type', 'harga'];
 
     public function wisata()
     {
