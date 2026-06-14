@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class InfoWisata extends Model
 {
+    use HasFactory;
     protected $table = 'info_wisata';
 
     protected $fillable = [

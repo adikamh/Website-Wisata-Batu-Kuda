@@ -1,8 +1,3 @@
-/**
- * Xendit Payment Integration
- * Handles payment creation and submission flow
- */
-
 class XenditPayment {
     constructor(options = {}) {
         this.formSelector = options.formSelector || '.ticket-form';
@@ -72,15 +67,6 @@ class XenditPayment {
 
             if (!createTxResponse.ok) {
                 throw new Error(txData.message || `Error: ${txData.errors || 'Unknown error'}`);
-            }
-
-            // If backend reports transaction already paid (immediate paid flow), show success and do not create invoice
-            if (txData.status_pembayaran === 'success') {
-                this.showSuccess('Pembayaran otomatis tercatat. Tiket telah dikirim ke email Anda.');
-                if (txData.redirect_after_order) {
-                    window.location.href = txData.redirect_after_order;
-                }
-                return;
             }
 
             if (!txData.transaction_id) {
