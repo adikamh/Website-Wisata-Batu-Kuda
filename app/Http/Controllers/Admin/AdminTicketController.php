@@ -7,6 +7,7 @@ use App\Models\TiketKategori;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
+use App\Models\AdminActivity;
 use App\Models\Wisata;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -50,41 +51,20 @@ class AdminTicketController extends Controller
             })
             ->values();
 
-        $recentActivities = collect()
-            ->merge(
-                User::query()
-                    ->latest()
-                    ->limit(3)
-                    ->get()
-                    ->map(fn (User $user) => [
-                        'type' => 'user',
-                        'icon' => 'fa-user-plus',
-                        'icon_bg' => 'bg-green-100',
-                        'icon_text' => 'text-green-600',
-                        'title' => $user->name,
-                        'description' => 'Pengguna baru terdaftar',
-                        'time' => $user->created_at,
-                    ])
-            )
-            ->merge(
-                Transaction::query()
-                    ->with(['user', 'details', 'rentalItems'])
-                    ->latest()
-                    ->limit(3)
-                    ->get()
-                    ->map(fn (Transaction $transaction) => [
-                        'type' => 'transaction',
-                        'icon' => 'fa-ticket-alt',
-                        'icon_bg' => 'bg-indigo-100',
-                        'icon_text' => 'text-indigo-600',
-                        'title' => $transaction->user->name ?? 'Pengguna',
-                        'description' => 'Pembelian tiket ' . ($transaction->details->sum('quantity') ?: 0) . ' item'
-                            . ($transaction->rentalItems->isNotEmpty() ? ' + sewa fasilitas' : ''),
-                        'time' => $transaction->created_at,
-                    ])
-            )
-            ->sortByDesc('time')
-            ->take(5)
+        // Recent admin activities (only admin activity log)
+        $recentActivities = AdminActivity::query()
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn (AdminActivity $a) => [
+                'type' => 'admin',
+                'icon' => $a->icon,
+                'icon_bg' => $a->icon_bg,
+                'icon_text' => $a->icon_text,
+                'title' => $a->title,
+                'description' => $a->description,
+                'time' => $a->created_at,
+            ])
             ->values();
 
         $stats = [
@@ -151,7 +131,6 @@ class AdminTicketController extends Controller
                 });
             })
             ->when($transactionFilters['approval_status'] !== 'all', fn ($query) => $query->where('status_pembayaran', $transactionFilters['approval_status']))
-            // exclude camping transactions that are already approved (they are shown in the Camping table)
             ->where(function ($q) {
                 $q->where('status_pembayaran', '!=', 'success')
                     ->orWhereDoesntHave('details', function ($dq) {
